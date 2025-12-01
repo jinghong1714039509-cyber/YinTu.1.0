@@ -1,0 +1,33 @@
+{% extends "base_site.html" %}
+{% block title %}标注工作台{% endblock %}
+{% block content %}
+<div class="right_col" role="main">
+  <div class="x_panel">
+    <div class="x_title"><h2>待领取任务 <small>标注端</small></h2><div class="clearfix"></div></div>
+    <div class="x_content">
+      <table class="table table-hover">
+        <thead>
+          <tr><th>任务编号</th><th>名称</th><th>样本量</th><th>已标注</th><th>操作</th></tr>
+        </thead>
+        <tbody>
+          {% for task in tasks %}
+          <tr>
+            <td>{{ task.code }}</td>
+            <td>{{ task.name }}</td>
+            <td>{{ task.sample_count }}</td>
+            <td>{{ task.labeled_count }}</td>
+            <td>
+              <a href="{% url 'labeler:gallery' task.id %}" class="btn btn-primary btn-xs">
+                <i class="fa fa-pencil"></i> 开始标注
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5">暂无待标注任务</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

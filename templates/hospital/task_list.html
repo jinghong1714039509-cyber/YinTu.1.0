@@ -1,0 +1,50 @@
+{% extends "base_site.html" %}
+{% block title %}病例任务列表{% endblock %}
+{% block content %}
+<div class="right_col" role="main">
+  <div class="x_panel">
+    <div class="x_title">
+      <h2>🏥 病例任务列表 <small>A端管理</small></h2>
+      <a href="{% url 'hospital:add' %}" class="btn btn-success pull-right"><i class="fa fa-plus"></i> 新建任务</a>
+      <div class="clearfix"></div>
+    </div>
+    <div class="x_content">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>任务编号</th>
+            <th>患者/任务名</th>
+            <th>状态</th>
+            <th>样本数</th>
+            <th>创建时间</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for task in tasks %}
+          <tr>
+            <td>{{ task.code }}</td>
+            <td><b>{{ task.name }}</b></td>
+            <td>
+                {% if task.state == 1 %}
+                <span class="label label-success">已就绪</span>
+                {% else %}
+                <span class="label label-warning">处理中</span>
+                {% endif %}
+            </td>
+            <td>{{ task.sample_count }} 张</td>
+            <td>{{ task.created_at|date:"Y-m-d H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center" style="padding: 30px;">
+                <h4>暂无数据</h4>
+                <p>请点击右上角“新建任务”上传视频</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
