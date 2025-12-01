@@ -6,21 +6,22 @@ from django.conf.urls.static import static
 from django.shortcuts import redirect
 
 def home_redirect(request):
-    # 首页直接跳到 A 端新建任务页
-    return redirect('/hospital/add/')
+    # 如果没登录，去登录页
+    if not request.user.is_authenticated:
+        return redirect('users:login')
+    # 如果登录了，根据角色跳转 (复用 views 里的逻辑，或者简单跳到 A 端)
+    return redirect('hospital:index')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home_redirect),
     
-    # A端路由
-    path('hospital/', include('apps.hospital.urls')), 
-    
-    # B端路由 (取消注释)
+    # 注册各个模块
+    path('users/', include('apps.users.urls')),  # <--- 确保这行存在
+    path('hospital/', include('apps.hospital.urls')),
     path('labeler/', include('apps.labeler.urls')),
 ]
 
-# 媒体文件访问配置
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])

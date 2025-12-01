@@ -1,21 +1,15 @@
-# apps.hospital.views
 import os
 import cv2
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.contrib import messages
-from django.http import HttpResponse
-from apps.core.models import LabelTask, SampleImage, STATUS_READY, STATUS_DONE
-from apps.core.utils import gen_random_code, encrypt_file, get_cipher_suite
+from apps.core.models import LabelTask, SampleImage, STATUS_READY, STATUS_ERROR
+from apps.core.utils import gen_random_code, encrypt_file
 
 def add_task(request):
-    """
-    [A端] 新建病例任务
-    对应旧代码: LabelTaskView.add
-    """
+    """A端：新建任务"""
     if request.method == 'POST':
         try:
-            # 1. 获取参数
             name = request.POST.get('name')
             remark = request.POST.get('remark')
             video_file = request.FILES.get('video_file')
@@ -24,29 +18,23 @@ def add_task(request):
             if not name or not video_file:
                 raise Exception("必须填写任务名称并上传视频")
 
-            # 2. 创建数据库记录
-            # 注意：这里简化了用户关联，默认关联到当前登录用户，如果没登录可能报错，暂用 id=1 测试
+            # 获取当前用户 (如果没有登录，默认给 ID=1 的管理员)
             user = request.user if request.user.is_authenticated else None
-            if not user:
-                # 开发测试阶段，如果未登录，先抛出错误或临时处理
-                # return HttpResponse("请先创建超级管理员并登录！", status=403)
-                pass 
+            creator_id = user.id if user else 1
 
             task = LabelTask.objects.create(
                 code=gen_random_code("TK"),
                 name=name,
                 remark=remark,
-                creator_id=user.id if user else 1, # 临时 fallback
+                creator_id=creator_id,
                 state=0 # 处理中
             )
 
-            # 3. 准备目录
-            # 视频和病例放在 media/secure_data/{code}/ (B端无法直接访问)
+            # 1. 保存加密文件 (如果有)
             secure_dir = os.path.join(settings.MEDIA_ROOT, 'secure_data', task.code)
             if not os.path.exists(secure_dir):
                 os.makedirs(secure_dir)
 
-            # 4. 处理加密病例
             if patient_file:
                 enc_data = encrypt_file(patient_file.read())
                 enc_path = os.path.join(secure_dir, 'patient.enc')
@@ -54,7 +42,7 @@ def add_task(request):
                     f.write(enc_data)
                 task.patient_file_path = os.path.join('secure_data', task.code, 'patient.enc')
 
-            # 5. 保存原始视频
+            # 2. 保存原始视频
             video_ext = os.path.splitext(video_file.name)[1]
             video_path = os.path.join(secure_dir, f'source{video_ext}')
             with open(video_path, 'wb+') as f:
@@ -63,15 +51,15 @@ def add_task(request):
             task.source_video_path = os.path.join('secure_data', task.code, f'source{video_ext}')
             task.save()
 
-            # 6. 执行抽帧 (同步执行)
-            # 图片放在 media/upload/images/{code}/ (B端可访问)
+            # 3. 执行抽帧 (同步执行)
             public_images_dir = os.path.join(settings.MEDIA_ROOT, 'upload', 'images', task.code)
             if not os.path.exists(public_images_dir):
                 os.makedirs(public_images_dir)
             
-            process_video(task, video_path, public_images_dir)
+            # 核心修改：传入 fps=1 (每秒1张)
+            process_video(task, video_path, public_images_dir, extract_fps=1)
 
-            messages.success(request, "任务创建成功！")
+            messages.success(request, "任务创建成功！图片正在后台生成...")
             return redirect('hospital:index')
 
         except Exception as e:
@@ -79,21 +67,22 @@ def add_task(request):
     
     return render(request, 'hospital/add_task.html')
 
-def process_video(task, video_abs_path, output_dir):
+def process_video(task, video_abs_path, output_dir, extract_fps=1):
     """
-    视频抽帧逻辑
+    视频抽帧逻辑 (优化版)
+    extract_fps: 每秒提取几张 (默认1张)
     """
     try:
         cap = cv2.VideoCapture(video_abs_path)
         if not cap.isOpened():
-            print("无法打开视频")
             return
 
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        if fps <= 0: fps = 30
+        # 获取视频原始帧率 (比如 30 或 60)
+        video_fps = cap.get(cv2.CAP_PROP_FPS)
+        if video_fps <= 0: video_fps = 30
         
-        # 目标：每秒 30 帧，或者根据设置
-        extract_interval = max(1, int(round(fps / task.video_fps)))
+        # 计算间隔：比如视频30帧/秒，我们要1帧/秒，那间隔就是 30 帧取一次
+        extract_interval = int(round(video_fps / extract_fps))
         
         frame_count = 0
         saved_count = 0
@@ -102,12 +91,14 @@ def process_video(task, video_abs_path, output_dir):
             ret, frame = cap.read()
             if not ret: break
 
+            # 关键逻辑：取余数为0时才保存
             if frame_count % extract_interval == 0:
                 file_name = f"img_{saved_count:05d}.jpg"
                 save_path = os.path.join(output_dir, file_name)
-                cv2.imwrite(save_path, frame)
+                
+                # 稍微压缩一下图片质量 (quality=70)，减小体积
+                cv2.imwrite(save_path, frame, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
 
-                # 写入样本表
                 SampleImage.objects.create(
                     task=task,
                     code=gen_random_code("SP", 4),
@@ -119,11 +110,10 @@ def process_video(task, video_abs_path, output_dir):
         
         cap.release()
         
-        # 更新状态
         task.sample_count = saved_count
         task.state = STATUS_READY
         task.save()
-        print(f"任务 {task.code} 处理完成，生成 {saved_count} 张图片")
+        print(f"任务 {task.code} 处理完成，保留了 {saved_count} 张图片")
 
     except Exception as e:
         print(f"视频处理异常: {e}")
@@ -131,9 +121,6 @@ def process_video(task, video_abs_path, output_dir):
         task.save()
 
 def index(request):
-    """
-    [A端] 任务列表页
-    对应旧代码: LabelTaskView.index
-    """
+    """A端列表"""
     tasks = LabelTask.objects.all().order_by('-id')
     return render(request, 'hospital/task_list.html', {'tasks': tasks})

@@ -2,31 +2,56 @@
 {% block title %}标注工作台{% endblock %}
 {% block content %}
 <div class="right_col" role="main">
-  <div class="x_panel">
-    <div class="x_title"><h2>待领取任务 <small>标注端</small></h2><div class="clearfix"></div></div>
-    <div class="x_content">
-      <table class="table table-hover">
-        <thead>
-          <tr><th>任务编号</th><th>名称</th><th>样本量</th><th>已标注</th><th>操作</th></tr>
-        </thead>
-        <tbody>
-          {% for task in tasks %}
-          <tr>
-            <td>{{ task.code }}</td>
-            <td>{{ task.name }}</td>
-            <td>{{ task.sample_count }}</td>
-            <td>{{ task.labeled_count }}</td>
-            <td>
-              <a href="{% url 'labeler:gallery' task.id %}" class="btn btn-primary btn-xs">
-                <i class="fa fa-pencil"></i> 开始标注
-              </a>
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="5">暂无待标注任务</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <div class="row">
+    <div class="col-md-12">
+      <div class="x_panel">
+        <div class="x_title">
+          <h2>✍️ 待领取任务 <small>B端标注员</small></h2>
+          <div class="clearfix"></div>
+        </div>
+        <div class="x_content">
+          <table class="table table-striped table-hover">
+            <thead>
+              <tr>
+                <th>任务编号</th>
+                <th>名称</th>
+                <th>样本量</th>
+                <th>进度</th>
+                <th style="width: 200px;">操作</th> </tr>
+            </thead>
+            <tbody>
+              {% for task in tasks %}
+              <tr>
+                <td>{{ task.code }}</td>
+                <td><b>{{ task.name }}</b></td>
+                <td>{{ task.sample_count }} 张</td>
+                <td>
+                    <div class="progress progress_sm" style="width: 100px; margin-bottom: 0; display: inline-block; vertical-align: middle;">
+                        <div class="progress-bar bg-green" role="progressbar" style="width: {{ task.labeled_count }}%;"></div>
+                    </div>
+                    <small style="margin-left: 5px;">{{ task.labeled_count }}/{{ task.sample_count }}</small>
+                </td>
+                <td>
+                  <a href="{% url 'labeler:gallery' task.id %}" class="btn btn-primary btn-xs">
+                    <i class="fa fa-pencil"></i> 标注
+                  </a>
+                  
+                  <a href="{% url 'labeler:download' task.id %}" class="btn btn-success btn-xs" target="_blank">
+                    <i class="fa fa-download"></i> 下载包
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center" style="padding: 20px;">
+                    暂无“已就绪”的任务，请等待A端上传。
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </div>

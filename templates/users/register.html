@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>注册 | 医疗数据平台</title>
+    <style>
+        /* 复用登录页的核心样式，保持一致性 */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body {
+            background-color: #f5f7fa;
+            background-image: radial-gradient(circle at 25% 25%, rgba(124, 166, 252, 0.05) 0%, transparent 50%),
+                             radial-gradient(circle at 75% 75%, rgba(124, 166, 252, 0.05) 0%, transparent 50%);
+            min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px;
+        }
+        .login-wrapper {
+            display: flex; max-width: 1000px; width: 100%;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.05);
+            border-radius: 20px; overflow: hidden; background-color: white;
+        }
+        .login-image {
+            flex: 1; display: flex; flex-direction: column; justify-content: center;
+            align-items: center; padding: 60px; background-color: #f8f9ff;
+        }
+        .login-form { flex: 1; padding: 50px 60px; display: flex; flex-direction: column; justify-content: center; }
+        .login-form h1 { font-size: 24px; color: #2c3e50; margin-bottom: 10px; }
+        .form-group { margin-bottom: 18px; } /* 稍微紧凑一点 */
+        .form-control {
+            width: 100%; padding: 12px 15px; border: 1px solid #e1e5e9;
+            border-radius: 10px; font-size: 14px; transition: all 0.3s ease; background-color: #fafbfc;
+        }
+        .form-control:focus { border-color: #4a90e2; box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1); outline: none; background-color: white; }
+        select.form-control { cursor: pointer; }
+        .btn {
+            width: 100%; padding: 14px; background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s ease; margin-top: 10px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(74, 144, 226, 0.3); }
+        .alert-error { color: #e74c3c; background: #fadbd8; padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
+        /* 响应式 */
+        @media (max-width: 768px) { .login-wrapper { flex-direction: column; } .login-image { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-image" style="background-color: #e8f6f3;">
+            <h2 style="margin-bottom: 20px; color: #16a085;">加入我们</h2>
+            <svg width="200" height="200" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" stroke="#16a085" stroke-width="2"/>
+                <path d="M20.5899 22C20.5899 18.13 16.7399 15 11.9999 15C7.25991 15 3.40991 18.13 3.40991 22" stroke="#16a085" stroke-width="2" stroke-linecap="round"/>
+                <path d="M19 5V9M17 7H21" stroke="#16a085" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <p style="margin-top: 20px; color: #666;">创建账号开始协作</p>
+        </div>
+
+        <div class="login-form">
+            <h1>创建账号</h1>
+            <p style="color: #666; margin-bottom: 30px;">请填写以下信息完成注册</p>
+
+            {% if messages %}
+            <div class="alert-error">
+                {% for message in messages %}
+                    {{ message }}<br>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'users:register' %}">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label style="font-size:12px; color:#666;">用户名</label>
+                    <input type="text" name="username" class="form-control" placeholder="请输入用户名 (登录用)" required>
+                </div>
+
+                <div class="form-group">
+                    <label style="font-size:12px; color:#666;">电子邮箱</label>
+                    <input type="email" name="email" class="form-control" placeholder="example@mail.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label style="font-size:12px; color:#666;">选择身份</label>
+                    <select name="role" class="form-control">
+                        <option value="labeler">我是标注员 (B端)</option>
+                        <option value="hospital">我是医生 (A端)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label style="font-size:12px; color:#666;">密码</label>
+                    <input type="password" name="password1" class="form-control" placeholder="请输入密码" required>
+                </div>
+
+                <div class="form-group">
+                    <label style="font-size:12px; color:#666;">确认密码</label>
+                    <input type="password" name="password2" class="form-control" placeholder="请再次输入密码" required>
+                </div>
+
+                <button type="submit" class="btn" style="background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);">立即注册</button>
+                
+                <div style="text-align: center; margin-top: 20px; font-size: 14px;">
+                    已有账号？ <a href="{% url 'users:login' %}" style="color: #16a085; text-decoration: none; font-weight: 500;">去登录</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
