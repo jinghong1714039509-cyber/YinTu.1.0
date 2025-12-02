@@ -13,8 +13,88 @@
     <link href="/static/build/css/custom.min.css" rel="stylesheet">
     
     <style>
-        .nav-md .container.body .col-md-3.left_col { min-height: 100%; }
-        .right_col { min-height: 100vh !important; }
+        /* =========================================
+           1. 布局核心修复 (解决高度与背景断层)
+           ========================================= */
+        .nav-md .container.body .col-md-3.left_col {
+            min-height: 100%;
+        }
+        
+        /* 让右侧内容区撑满屏幕，并使用柔和的灰色背景 */
+        .right_col {
+            min-height: 100vh !important;
+            background-color: #F7F7F7 !important;
+        }
+
+        .main_container {
+            background-color: #2A3F54;
+        }
+
+        /* =========================================
+           2. 下拉菜单终极修复 (解决点击不显示/位置错乱)
+           ========================================= */
+        
+        /* 允许顶部导航溢出，防止菜单被裁剪 */
+        .top_nav .nav_menu {
+            overflow: visible !important;
+        }
+        
+        /* 给父级 li 建立定位基准，防止菜单跑到页面(0,0)坐标 */
+        .navbar-nav > li {
+            position: relative !important;
+        }
+    
+        /* 下拉菜单样式重置 */
+        .navbar-right .dropdown-menu {
+            position: absolute !important;
+            top: 100% !important; /* 在头像正下方 */
+            right: 0 !important;
+            left: auto !important;
+            z-index: 99999 !important; /* 保证最顶层 */
+            margin-top: 2px;
+            background-color: #fff;
+            border: 1px solid #d9d9d9;
+            box-shadow: 0 6px 12px rgba(0,0,0,.175);
+            display: none; /* 默认隐藏 */
+        }
+        
+        /* 🔥 关键：当 JS 添加 open 类时，强制显示菜单 */
+        .navbar-nav > li.open .dropdown-menu {
+            display: block !important;
+        }
+    
+        /* 头像点击区域层级 */
+        .user-profile {
+            position: relative !important;
+            z-index: 9999 !important;
+            cursor: pointer;
+        }
+        
+        /* =========================================
+           3. 界面美化 (卡片圆角与阴影)
+           ========================================= */
+        .x_panel {
+            border: none !important;
+            border-radius: 8px !important;
+            background-color: #fff !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important; /* 悬浮阴影 */
+            margin-bottom: 20px;
+            padding: 20px !important;
+        }
+
+        .x_title {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* 底部 Footer 美化 */
+        footer {
+            background: #F7F7F7 !important;
+            color: #999;
+            padding: 15px 20px;
+            border-top: 1px solid #e7e7e7;
+        }
     </style>
     {% block css %}{% endblock %}
 </head>
@@ -29,20 +109,39 @@
                     </div>
                     <div class="clearfix"></div>
                     <br />
+                    
                     <div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
+                        
+                        {% if user.is_superuser %}
+                        <div class="menu_section">
+                            <h3>管理员后台</h3>
+                            <ul class="nav side-menu">
+                                <li><a href="{% url 'hospital:index' %}"><i class="fa fa-h-square"></i> 医院端列表 (A)</a></li>
+                                <li><a href="{% url 'labeler:dashboard' %}"><i class="fa fa-pencil-square-o"></i> 标注端看板 (B)</a></li>
+                                <li><a href="/admin/"><i class="fa fa-cogs"></i> 系统管理</a></li>
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        {% if user.role == 'hospital' or user.is_superuser %}
                         <div class="menu_section">
                             <h3>A端 / 医院</h3>
                             <ul class="nav side-menu">
-                                <li><a href="/hospital/add/"><i class="fa fa-plus"></i> 新建病例任务</a></li>
-                                <li><a href="/hospital/list/"><i class="fa fa-list"></i> 任务列表</a></li>
+                                <li><a href="{% url 'hospital:add' %}"><i class="fa fa-plus-circle"></i> 新建病例任务</a></li>
+                                <li><a href="{% url 'hospital:index' %}"><i class="fa fa-list-ul"></i> 任务状态列表</a></li>
                             </ul>
                         </div>
+                        {% endif %}
+
+                        {% if user.role == 'labeler' or user.is_superuser %}
                         <div class="menu_section">
                             <h3>B端 / 标注</h3>
                             <ul class="nav side-menu">
-                                <li><a href="/labeler/dashboard/"><i class="fa fa-folder-open"></i> 标注工作台</a></li>
+                                <li><a href="{% url 'labeler:dashboard' %}"><i class="fa fa-folder-open"></i> 任务领取大厅</a></li>
                             </ul>
                         </div>
+                        {% endif %}
+                        
                     </div>
                 </div>
             </div>
@@ -50,25 +149,91 @@
             <div class="top_nav">
                 <div class="nav_menu">
                     <nav>
-                        <div class="nav toggle"><a id="menu_toggle"><i class="fa fa-bars"></i></a></div>
+                        <div class="nav toggle">
+                            <a id="menu_toggle"><i class="fa fa-bars"></i></a>
+                        </div>
+
                         <ul class="nav navbar-nav navbar-right">
-                            <li><a href="javascript:;" class="user-profile">管理员</a></li>
+                            <li class="">
+                                <a href="javascript:;" class="user-profile dropdown-toggle" aria-expanded="false">
+                                    <img src="/static/images/user.png" alt="">
+                                    {% if user.is_authenticated %}
+                                        {{ user.username }}
+                                        <span class=" fa fa-angle-down"></span>
+                                    {% else %}
+                                        未登录
+                                    {% endif %}
+                                </a>
+                                
+                                <ul class="dropdown-menu dropdown-usermenu pull-right">
+                                    <li>
+                                        <a href="javascript:;">
+                                            <span><i class="fa fa-question-circle pull-right"></i> 帮助文档</span>
+                                        </a>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li>
+                                        <a href="{% url 'users:logout' %}">
+                                            <i class="fa fa-sign-out pull-right"></i> 
+                                            <strong>🔄 切换账号 / 退出</strong>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
                         </ul>
                     </nav>
                 </div>
             </div>
 
             {% block content %}{% endblock %}
-            
-            <footer><div class="pull-right">YinTu System</div><div class="clearfix"></div></footer>
+
+            <footer>
+                <div class="pull-right">YinTu System v1.0</div>
+                <div class="clearfix"></div>
+            </footer>
         </div>
     </div>
 
-    <script src="/static/vendors/jquery/dist/jquery.min.js"></script>
-    <script src="/static/vendors/bootstrap/dist/js/bootstrap.min.js"></script>
-    <script src="/static/vendors/fastclick/lib/fastclick.js"></script>
-    <script src="/static/vendors/nprogress/nprogress.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    
+    <script src="https://cdn.bootcdn.net/ajax/libs/fastclick/1.0.6/fastclick.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
+    
     <script src="/static/build/js/custom.min.js"></script>
+    
     {% block js %}{% endblock %}
+
+    <script>
+    $(document).ready(function() {
+        // 1. 点击头像：切换 'open' 类
+        $('.user-profile').on('click', function(e) {
+            // 阻止冒泡，防止被其他脚本拦截
+            e.stopPropagation();
+            e.preventDefault();
+            
+            var $parent = $(this).parent(); // 获取 li
+            
+            // 切换 open 类 (CSS 中定义了 .open .dropdown-menu { display: block })
+            if ($parent.hasClass('open')) {
+                $parent.removeClass('open');
+            } else {
+                // 先关闭其他菜单
+                $('.navbar-nav > li').removeClass('open');
+                $parent.addClass('open');
+            }
+        });
+
+        // 2. 点击页面空白处：关闭菜单
+        $(document).on('click', function() {
+            $('.navbar-nav > li').removeClass('open');
+        });
+        
+        // 3. 阻止菜单内部点击关闭 (防止误操作)
+        $('.dropdown-menu').on('click', function(e){
+            e.stopPropagation();
+        });
+    });
+    </script>
 </body>
 </html>
