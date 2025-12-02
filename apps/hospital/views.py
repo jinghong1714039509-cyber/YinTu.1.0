@@ -3,16 +3,18 @@ import cv2
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.contrib import messages
-# 1. 【新增】引入权限控制和缓存控制装饰器
+# 1. 引入装饰器
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
+# 假设您已经按照上一步建好了 apps/core/decorators.py
+from apps.core.decorators import hospital_required 
 
 from apps.core.models import LabelTask, SampleImage, STATUS_READY, STATUS_ERROR
 from apps.core.utils import gen_random_code, encrypt_file
 
-# 2. 【修改】添加装饰器
-@never_cache       # 禁止浏览器缓存此页面（解决退出后点“返回”还能看到页面的问题）
-@login_required    # 必须登录才能访问（解决退出后还能上传的问题）
+# 2. 修改：加上 @hospital_required
+@never_cache
+@hospital_required  # <--- 关键修改：只有医院角色能进
 def add_task(request):
     """A端：新建任务"""
     if request.method == 'POST':
@@ -25,7 +27,6 @@ def add_task(request):
             if not name or not video_file:
                 raise Exception("必须填写任务名称并上传视频")
 
-            # 获取当前用户 (因为有 @login_required，request.user 一定是已登录用户)
             user = request.user 
             creator_id = user.id
 
@@ -58,12 +59,11 @@ def add_task(request):
             task.source_video_path = os.path.join('secure_data', task.code, f'source{video_ext}')
             task.save()
 
-            # 3. 执行抽帧 (同步执行)
+            # 3. 执行抽帧
             public_images_dir = os.path.join(settings.MEDIA_ROOT, 'upload', 'images', task.code)
             if not os.path.exists(public_images_dir):
                 os.makedirs(public_images_dir)
             
-            # 核心修改：传入 fps=1 (每秒1张)
             process_video(task, video_path, public_images_dir, extract_fps=1)
 
             messages.success(request, "任务创建成功！图片正在后台生成...")
@@ -76,19 +76,16 @@ def add_task(request):
 
 def process_video(task, video_abs_path, output_dir, extract_fps=1):
     """
-    视频抽帧逻辑 (优化版)
-    extract_fps: 每秒提取几张 (默认1张)
+    视频抽帧逻辑 (保持不变)
     """
     try:
         cap = cv2.VideoCapture(video_abs_path)
         if not cap.isOpened():
             return
 
-        # 获取视频原始帧率 (比如 30 或 60)
         video_fps = cap.get(cv2.CAP_PROP_FPS)
         if video_fps <= 0: video_fps = 30
         
-        # 计算间隔：比如视频30帧/秒，我们要1帧/秒，那间隔就是 30 帧取一次
         extract_interval = int(round(video_fps / extract_fps))
         
         frame_count = 0
@@ -98,12 +95,10 @@ def process_video(task, video_abs_path, output_dir, extract_fps=1):
             ret, frame = cap.read()
             if not ret: break
 
-            # 关键逻辑：取余数为0时才保存
             if frame_count % extract_interval == 0:
                 file_name = f"img_{saved_count:05d}.jpg"
                 save_path = os.path.join(output_dir, file_name)
                 
-                # 稍微压缩一下图片质量 (quality=70)，减小体积
                 cv2.imwrite(save_path, frame, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
 
                 SampleImage.objects.create(
@@ -127,9 +122,9 @@ def process_video(task, video_abs_path, output_dir, extract_fps=1):
         task.state = STATUS_ERROR
         task.save()
 
-# 3. 【修改】添加装饰器
-@never_cache       # 禁止缓存
-@login_required    # 必须登录
+# 3. 修改：加上 @hospital_required
+@never_cache
+@hospital_required  # <--- 关键修改：只有医院角色能进
 def index(request):
     """A端列表"""
     # 还可以加一步：只显示当前用户创建的任务 (可选)

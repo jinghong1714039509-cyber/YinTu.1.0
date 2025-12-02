@@ -4,16 +4,21 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.conf import settings
 from django.contrib import messages
-# 1. 【新增】引入权限和缓存装饰器
+# 1. 引入权限和缓存装饰器
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 
+# 2. 【核心修改】引入我们自定义的 B 端权限装饰器
+# (确保您已经建立了 apps/core/decorators.py 文件)
+from apps.core.decorators import labeler_required
+
 from apps.core.models import LabelTask, SampleImage, STATUS_READY
 
-# 2. 【修改】为所有视图添加装饰器
+# 3. 【修改】为所有视图添加 @labeler_required 装饰器
+# 注意顺序：@never_cache -> @labeler_required (它里面包含了登录校验)
 
-@never_cache       # 禁止缓存，防止退出后点后退能看到页面
-@login_required    # 必须登录，否则跳回登录页
+@never_cache
+@labeler_required  # <--- ✅ 新增：只允许标注员访问，如果是医生会报错或跳走
 def dashboard(request):
     """
     [B端] 首页：展示所有状态为'已就绪'的任务
@@ -24,7 +29,7 @@ def dashboard(request):
     return render(request, 'labeler/dashboard.html', {'tasks': tasks})
 
 @never_cache
-@login_required
+@labeler_required  # <--- ✅ 新增
 def gallery(request, task_id):
     """
     [B端] 图片预览墙 (分页展示防止卡顿)
@@ -35,7 +40,7 @@ def gallery(request, task_id):
     return render(request, 'labeler/gallery.html', {'task': task, 'samples': samples})
 
 @never_cache
-@login_required
+@labeler_required  # <--- ✅ 新增
 def download_zip(request, task_id):
     """
     [B端] 打包下载脱敏图片
@@ -58,7 +63,7 @@ def download_zip(request, task_id):
     return response
 
 @never_cache
-@login_required
+@labeler_required  # <--- ✅ 新增
 def upload_annotation(request, task_id):
     """
     [B端] 上传标注结果 (ZIP)
