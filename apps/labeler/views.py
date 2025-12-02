@@ -4,8 +4,16 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.conf import settings
 from django.contrib import messages
+# 1. 【新增】引入权限和缓存装饰器
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.cache import never_cache
+
 from apps.core.models import LabelTask, SampleImage, STATUS_READY
 
+# 2. 【修改】为所有视图添加装饰器
+
+@never_cache       # 禁止缓存，防止退出后点后退能看到页面
+@login_required    # 必须登录，否则跳回登录页
 def dashboard(request):
     """
     [B端] 首页：展示所有状态为'已就绪'的任务
@@ -15,6 +23,8 @@ def dashboard(request):
     tasks = LabelTask.objects.filter(state=STATUS_READY).order_by('-created_at')
     return render(request, 'labeler/dashboard.html', {'tasks': tasks})
 
+@never_cache
+@login_required
 def gallery(request, task_id):
     """
     [B端] 图片预览墙 (分页展示防止卡顿)
@@ -24,6 +34,8 @@ def gallery(request, task_id):
     samples = task.samples.all()[:50] 
     return render(request, 'labeler/gallery.html', {'task': task, 'samples': samples})
 
+@never_cache
+@login_required
 def download_zip(request, task_id):
     """
     [B端] 打包下载脱敏图片
@@ -31,7 +43,6 @@ def download_zip(request, task_id):
     task = get_object_or_404(LabelTask, id=task_id)
     
     # 对应 hospital views 中生成的图片路径: media/upload/images/{code}
-    # 注意：这里使用的是 settings.MEDIA_ROOT
     images_dir = os.path.join(settings.MEDIA_ROOT, 'upload', 'images', task.code)
     
     response = HttpResponse(content_type='application/zip')
@@ -46,6 +57,8 @@ def download_zip(request, task_id):
                         zf.write(os.path.join(root, file), arcname=file)
     return response
 
+@never_cache
+@login_required
 def upload_annotation(request, task_id):
     """
     [B端] 上传标注结果 (ZIP)
@@ -73,7 +86,8 @@ def upload_annotation(request, task_id):
                         content = zf.read(filename).decode('utf-8', errors='ignore')
                         sample.annotation_content = content
                         sample.is_labeled = True
-                        sample.labeled_by = request.user.username if request.user.is_authenticated else 'Guest'
+                        # 确保 request.user 存在 (login_required 已保证)
+                        sample.labeled_by = request.user.username 
                         sample.save()
             
             # 更新任务进度

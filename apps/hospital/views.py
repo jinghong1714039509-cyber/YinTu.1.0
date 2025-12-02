@@ -3,9 +3,16 @@ import cv2
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.contrib import messages
+# 1. 【新增】引入权限控制和缓存控制装饰器
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.cache import never_cache
+
 from apps.core.models import LabelTask, SampleImage, STATUS_READY, STATUS_ERROR
 from apps.core.utils import gen_random_code, encrypt_file
 
+# 2. 【修改】添加装饰器
+@never_cache       # 禁止浏览器缓存此页面（解决退出后点“返回”还能看到页面的问题）
+@login_required    # 必须登录才能访问（解决退出后还能上传的问题）
 def add_task(request):
     """A端：新建任务"""
     if request.method == 'POST':
@@ -18,9 +25,9 @@ def add_task(request):
             if not name or not video_file:
                 raise Exception("必须填写任务名称并上传视频")
 
-            # 获取当前用户 (如果没有登录，默认给 ID=1 的管理员)
-            user = request.user if request.user.is_authenticated else None
-            creator_id = user.id if user else 1
+            # 获取当前用户 (因为有 @login_required，request.user 一定是已登录用户)
+            user = request.user 
+            creator_id = user.id
 
             task = LabelTask.objects.create(
                 code=gen_random_code("TK"),
@@ -120,7 +127,14 @@ def process_video(task, video_abs_path, output_dir, extract_fps=1):
         task.state = STATUS_ERROR
         task.save()
 
+# 3. 【修改】添加装饰器
+@never_cache       # 禁止缓存
+@login_required    # 必须登录
 def index(request):
     """A端列表"""
+    # 还可以加一步：只显示当前用户创建的任务 (可选)
+    # if not request.user.is_superuser:
+    #     tasks = LabelTask.objects.filter(creator_id=request.user.id).order_by('-id')
+    # else:
     tasks = LabelTask.objects.all().order_by('-id')
     return render(request, 'hospital/task_list.html', {'tasks': tasks})
