@@ -1,0 +1,71 @@
+{% extends "base_site.html" %}
+{% block title %}用户与权限管理{% endblock %}
+
+{% block content %}
+<div class="right_col" role="main">
+  <div class="x_panel">
+    <div class="x_title">
+      <h2>👥 用户账户管理 <small>仅管理员可见</small></h2>
+      <div class="clearfix"></div>
+    </div>
+    <div class="x_content">
+      <table class="table table-striped jambo_table">
+        <thead>
+          <tr class="headings">
+            <th>ID</th>
+            <th>用户名</th>
+            <th>角色 (Role)</th>
+            <th>注册时间</th>
+            <th>状态</th>
+            <th class="text-right">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>{{ u.id }}</td>
+            <td>
+                <strong>{{ u.username }}</strong>
+                {% if u.is_superuser %} <span class="label label-danger">超级管理员</span> {% endif %}
+            </td>
+            <td>
+                {% if u.role == 'hospital' %}
+                    <span class="label label-primary">🏥 医院/医生</span>
+                {% elif u.role == 'labeler' %}
+                    <span class="label label-success">✍️ 标注员</span>
+                {% else %}
+                    <span class="label label-default">未定义</span>
+                {% endif %}
+            </td>
+            <td>{{ u.date_joined|date:"Y-m-d H:i" }}</td>
+            <td>
+                {% if u.is_active %}
+                    <span class="text-success"><i class="fa fa-circle"></i> 正常</span>
+                {% else %}
+                    <span class="text-muted"><i class="fa fa-circle-o"></i> 禁用</span>
+                {% endif %}
+            </td>
+            <td class="text-right">
+              {% if not u.is_superuser %}
+                  <a href="{% url 'users:user_reset' u.id %}" class="btn btn-warning btn-xs" onclick="return confirm('确定将密码重置为 123456 吗？')">
+                    <i class="fa fa-key"></i> 重置密码
+                  </a>
+                  <a href="{% url 'users:user_delete' u.id %}" class="btn btn-danger btn-xs" onclick="return confirm('确定删除此用户？数据不可恢复！')">
+                    <i class="fa fa-trash"></i> 删除
+                  </a>
+              {% else %}
+                  <button class="btn btn-default btn-xs" disabled>系统保护</button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      
+      <div class="alert alert-info">
+          <i class="fa fa-info-circle"></i> 提示：出于安全加密规则，无法直接查看原始密码。您可以点击“重置密码”将其强制修改为默认密码（如 123456），然后通知用户登录修改。
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

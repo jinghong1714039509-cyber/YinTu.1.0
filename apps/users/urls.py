@@ -9,4 +9,8 @@ urlpatterns = [
     
     # 新增注册页 -> /users/register/
     path('register/', views.register_view, name='register'), 
+    # 【新增】用户管理路由
+    path('manage/', views.user_manage_list, name='manage_list'),
+    path('manage/delete/<int:user_id>/', views.user_delete, name='user_delete'),
+    path('manage/reset/<int:user_id>/', views.user_reset_password, name='user_reset'),
 ]

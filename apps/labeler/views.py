@@ -9,7 +9,8 @@ from django.contrib import messages
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
-
+from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.decorators import login_required
 # 引入自定义装饰器
 from apps.core.decorators import labeler_required
 from apps.core.models import LabelTask, SampleImage, STATUS_READY
@@ -150,3 +151,24 @@ def upload_annotation(request, task_id):
             messages.error(request, f"失败: {e}")
             
     return redirect('labeler:gallery', task_id=task.id)
+def is_superuser(user):
+    return user.is_superuser
+
+@never_cache
+@login_required
+@user_passes_test(is_superuser)  # 只有管理员能访问
+def delete_task(request, task_id):
+    """
+    [管理员功能] 删除任务及关联文件
+    """
+    task = get_object_or_404(LabelTask, id=task_id)
+    
+    # 1. 删除物理文件 (可选，建议保留以免误删，或者由信号处理)
+    # 这里简单起见，只删数据库记录，Django 会级联删除 SampleImage
+    # 如果需要删物理文件，需要配合 shutil.rmtree 清理 media 目录
+    
+    # 2. 删除数据库记录
+    task.delete()
+    
+    messages.success(request, f"任务 {task.code} 已删除")
+    return redirect('labeler:dashboard')

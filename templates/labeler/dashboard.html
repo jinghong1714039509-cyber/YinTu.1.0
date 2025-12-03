@@ -37,6 +37,9 @@
     /* 底部按钮组 */
     .card-actions { display: flex; gap: 10px; margin-top: 15px; }
     .btn-action { flex: 1; border-radius: 30px; font-size: 13px; padding: 8px 0; }
+
+    /* 管理员特权区 */
+    .admin-actions { margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc; text-align: center; }
 </style>
 
 <div class="right_col" role="main">
@@ -96,16 +99,30 @@
             <div class="card-actions">
                 {% if task.first_sample_id %}
                     <a href="{% url 'labeler:annotate' task.first_sample_id %}" class="btn btn-primary btn-action">
-                        <i class="fa fa-mouse-pointer"></i> 在线标注
+                        <i class="fa fa-mouse-pointer"></i> 标注
                     </a>
                 {% else %}
-                    <button class="btn btn-default btn-action" disabled>暂无图片</button>
+                    <button class="btn btn-default btn-action" disabled>空</button>
                 {% endif %}
 
                 <button type="button" class="btn btn-warning btn-action" onclick="openUploadModal('{{ task.id }}', '{{ task.name }}')">
-                    <i class="fa fa-upload"></i> 上传结果
+                    <i class="fa fa-upload"></i> 上传
                 </button>
             </div>
+            
+            {% if user.is_superuser %}
+            <div class="admin-actions">
+                <small class="text-danger" style="display:block; margin-bottom:5px;">管理员操作</small>
+                
+                <a href="{% url 'labeler:download' task.id %}" class="btn btn-success btn-xs" target="_blank" title="直接下载数据包">
+                    <i class="fa fa-download"></i> 下载
+                </a>
+                
+                <a href="{% url 'labeler:delete_task' task.id %}" class="btn btn-danger btn-xs" onclick="return confirm('⚠️ 高危操作\n确定要彻底删除任务 {{ task.name }} 及其所有标注数据吗？\n此操作不可恢复！');" title="删除任务">
+                    <i class="fa fa-trash"></i> 删除
+                </a>
+            </div>
+            {% endif %}
             
             <div class="text-center" style="margin-top: 10px;">
                 <a href="{% url 'labeler:gallery' task.id %}" style="font-size: 12px; text-decoration: underline; color: #999;">
@@ -159,17 +176,12 @@
 <script>
     // 打开模态框并动态设置 Form URL
     function openUploadModal(taskId, taskName) {
-        // 设置任务名提示
         $('#modalTaskName').text(taskName);
-        
-        // 构建上传 URL (注意: 这里利用了 Django URL 的结构 /labeler/upload/<task_id>/)
-        // 假设您的 urls.py 中 name='upload' 对应 /labeler/upload/<int:task_id>/
+        // 构建上传 URL (注意: 这里利用了 Django URL 的结构)
+        // 假设 urls.py 中 name='upload' 对应 /labeler/upload/<task_id>/
+        // 使用 '0' 作为占位符，然后替换
         var uploadUrl = "{% url 'labeler:upload' 0 %}".replace('0', taskId);
-        
-        // 设置表单 action
         $('#uploadForm').attr('action', uploadUrl);
-        
-        // 显示模态框 (Bootstrap 3 写法)
         $('#uploadModal').modal('show');
     }
 </script>

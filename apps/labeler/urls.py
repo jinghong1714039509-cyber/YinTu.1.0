@@ -18,4 +18,6 @@ urlpatterns = [
     #标注
     path('annotate/<int:sample_id>/', views.annotate_page, name='annotate'),
     path('api/save/<int:sample_id>/', views.save_annotation_data, name='save_api'),
+    # 【新增】删除任务路由
+    path('delete_task/<int:task_id>/', views.delete_task, name='delete_task'),
 ]

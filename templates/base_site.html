@@ -114,11 +114,12 @@
                         
                         {% if user.is_superuser %}
                         <div class="menu_section">
-                            <h3>管理员后台</h3>
+                            <h3>🛡️ 超级管理员</h3>
                             <ul class="nav side-menu">
-                                <li><a href="{% url 'hospital:index' %}"><i class="fa fa-h-square"></i> 医院端列表 (A)</a></li>
-                                <li><a href="{% url 'labeler:dashboard' %}"><i class="fa fa-pencil-square-o"></i> 标注端看板 (B)</a></li>
-                                <li><a href="/admin/"><i class="fa fa-cogs"></i> 系统管理</a></li>
+                                <li><a href="{% url 'users:manage_list' %}"><i class="fa fa-users"></i> 账号与权限管理</a></li>
+                                <li><a href="{% url 'labeler:dashboard' %}"><i class="fa fa-eye"></i> 进入标注端监控</a></li>
+                                <li><a href="{% url 'hospital:index' %}"><i class="fa fa-hospital-o"></i> 进入医院端监控</a></li>
+                                <li><a href="/admin/"><i class="fa fa-cogs"></i> Django 后台</a></li>
                             </ul>
                         </div>
                         {% endif %}
@@ -164,6 +165,7 @@
                                     <img src="/static/images/user.png" alt="">
                                     {% if user.is_authenticated %}
                                         {{ user.username }}
+                                        {% if user.is_superuser %}<small class="text-danger">(Admin)</small>{% endif %}
                                         <span class=" fa fa-angle-down"></span>
                                     {% else %}
                                         未登录
