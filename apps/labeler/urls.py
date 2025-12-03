@@ -15,4 +15,7 @@ urlpatterns = [
     
     # 上传
     path('upload/<int:task_id>/', views.upload_annotation, name='upload'),
+    #标注
+    path('annotate/<int:sample_id>/', views.annotate_page, name='annotate'),
+    path('api/save/<int:sample_id>/', views.save_annotation_data, name='save_api'),
 ]

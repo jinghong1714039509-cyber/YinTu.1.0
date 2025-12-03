@@ -1,58 +1,176 @@
 {% extends "base_site.html" %}
 {% block title %}标注工作台{% endblock %}
+
 {% block content %}
+<style>
+    /* 卡片自定义样式 */
+    .task-card {
+        background: #fff;
+        border: 1px solid #E6E9ED;
+        border-radius: 6px;
+        margin-bottom: 25px;
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+    .task-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        border-color: #1ABB9C;
+    }
+    /* 顶部彩色条 (区分不同任务/科室) */
+    .card-stripe { height: 6px; width: 100%; background: #3498db; }
+    .card-stripe.done { background: #1ABB9C; } /* 完成变绿 */
+    
+    .card-body { padding: 20px; }
+    
+    /* 标题与头部 */
+    .card-header-flex { display: flex; justify-content: space-between; margin-bottom: 15px; }
+    .task-code { font-family: monospace; background: #f5f5f5; padding: 2px 6px; border-radius: 4px; color: #666; font-size: 12px; }
+    .task-name { font-size: 18px; font-weight: bold; color: #333; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; margin-bottom: 5px; }
+    
+    /* 数据区 */
+    .stat-row { display: flex; justify-content: space-between; margin: 15px 0; text-align: center; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 10px 0; }
+    .stat-item h3 { margin: 0; font-size: 20px; font-weight: bold; color: #555; }
+    .stat-item span { font-size: 11px; color: #999; text-transform: uppercase; }
+    
+    /* 底部按钮组 */
+    .card-actions { display: flex; gap: 10px; margin-top: 15px; }
+    .btn-action { flex: 1; border-radius: 30px; font-size: 13px; padding: 8px 0; }
+</style>
+
 <div class="right_col" role="main">
+  
+  <div class="page-title">
+    <div class="title_left">
+      <h3>标注工作台 <small> 我的任务列表</small></h3>
+    </div>
+  </div>
+  <div class="clearfix"></div>
+
   <div class="row">
+    {% for task in tasks %}
+    <div class="col-md-4 col-sm-6 col-xs-12">
+      <div class="task-card">
+        <div class="card-stripe {% if task.progress == 100 %}done{% endif %}"></div>
+        
+        <div class="card-body">
+            <div class="card-header-flex">
+                <span class="task-code">{{ task.code }}</span>
+                {% if task.progress == 100 %}
+                    <span class="label label-success">已完成</span>
+                {% else %}
+                    <span class="label label-primary">进行中</span>
+                {% endif %}
+            </div>
+
+            <a href="{% if task.first_sample_id %}{% url 'labeler:annotate' task.first_sample_id %}{% else %}#{% endif %}" class="task-name" title="{{ task.name }}">
+                {{ task.name }}
+            </a>
+            <div class="text-muted" style="font-size: 12px; margin-bottom: 10px;">
+                <i class="fa fa-user-md"></i> {{ task.creator.username }} | {{ task.created_at|date:"Y-m-d" }}
+            </div>
+
+            <div class="progress progress_sm" style="margin-bottom: 5px;">
+                <div class="progress-bar {% if task.progress == 100 %}bg-green{% else %}bg-blue{% endif %}" role="progressbar" style="width: {{ task.progress }}%;"></div>
+            </div>
+            <div style="font-size: 12px; color: #999; text-align: right;">
+                进度: {{ task.progress }}%
+            </div>
+
+            <div class="stat-row">
+                <div class="stat-item">
+                    <span>总样本</span>
+                    <h3>{{ task.sample_count }}</h3>
+                </div>
+                <div class="stat-item">
+                    <span>已标注</span>
+                    <h3 class="text-success">{{ task.labeled_count }}</h3>
+                </div>
+                <div class="stat-item">
+                    <span>剩余</span>
+                    <h3 class="text-danger">{{ task.sample_count|add:"-"|add:task.labeled_count }}</h3>
+                </div>
+            </div>
+
+            <div class="card-actions">
+                {% if task.first_sample_id %}
+                    <a href="{% url 'labeler:annotate' task.first_sample_id %}" class="btn btn-primary btn-action">
+                        <i class="fa fa-mouse-pointer"></i> 在线标注
+                    </a>
+                {% else %}
+                    <button class="btn btn-default btn-action" disabled>暂无图片</button>
+                {% endif %}
+
+                <button type="button" class="btn btn-warning btn-action" onclick="openUploadModal('{{ task.id }}', '{{ task.name }}')">
+                    <i class="fa fa-upload"></i> 上传结果
+                </button>
+            </div>
+            
+            <div class="text-center" style="margin-top: 10px;">
+                <a href="{% url 'labeler:gallery' task.id %}" style="font-size: 12px; text-decoration: underline; color: #999;">
+                    查看所有图片列表
+                </a>
+            </div>
+
+        </div>
+      </div>
+    </div>
+    {% empty %}
     <div class="col-md-12">
-      <div class="x_panel">
-        <div class="x_title">
-          <h2>✍️ 待领取任务 <small>B端标注员</small></h2>
-          <div class="clearfix"></div>
+        <div class="alert alert-info text-center">
+            <h4><i class="fa fa-info-circle"></i> 暂无任务</h4>
+            <p>当前没有待领取的标注任务，请联系管理员或稍后再试。</p>
         </div>
-        <div class="x_content">
-          <table class="table table-striped table-hover">
-            <thead>
-              <tr>
-                <th>任务编号</th>
-                <th>名称</th>
-                <th>样本量</th>
-                <th>进度</th>
-                <th style="width: 200px;">操作</th> </tr>
-            </thead>
-            <tbody>
-              {% for task in tasks %}
-              <tr>
-                <td>{{ task.code }}</td>
-                <td><b>{{ task.name }}</b></td>
-                <td>{{ task.sample_count }} 张</td>
-                <td>
-                    <div class="progress progress_sm" style="width: 100px; margin-bottom: 0; display: inline-block; vertical-align: middle;">
-                        <div class="progress-bar bg-green" role="progressbar" style="width: {{ task.labeled_count }}%;"></div>
-                    </div>
-                    <small style="margin-left: 5px;">{{ task.labeled_count }}/{{ task.sample_count }}</small>
-                </td>
-                <td>
-                  <a href="{% url 'labeler:gallery' task.id %}" class="btn btn-primary btn-xs">
-                    <i class="fa fa-pencil"></i> 标注
-                  </a>
-                  
-                  <a href="{% url 'labeler:download' task.id %}" class="btn btn-success btn-xs" target="_blank">
-                    <i class="fa fa-download"></i> 下载包
-                  </a>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="5" class="text-center" style="padding: 20px;">
-                    暂无“已就绪”的任务，请等待A端上传。
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div id="uploadModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span></button>
+        <h4 class="modal-title" id="uploadModalLabel">上传标注包</h4>
+      </div>
+      <div class="modal-body">
+        <p>正在为任务：<b id="modalTaskName" class="text-danger"></b> 上传数据</p>
+        <p class="text-muted">请上传包含 XML/JSON 文件的 ZIP 压缩包。系统会自动解压并匹配文件名。</p>
+        
+        <form id="uploadForm" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <input type="file" name="annotation_file" required class="form-control" accept=".zip">
+            </div>
+            <div class="text-right">
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-warning">确认覆盖并上传</button>
+            </div>
+        </form>
       </div>
     </div>
   </div>
 </div>
+
+{% endblock %}
+
+{% block js %}
+<script>
+    // 打开模态框并动态设置 Form URL
+    function openUploadModal(taskId, taskName) {
+        // 设置任务名提示
+        $('#modalTaskName').text(taskName);
+        
+        // 构建上传 URL (注意: 这里利用了 Django URL 的结构 /labeler/upload/<task_id>/)
+        // 假设您的 urls.py 中 name='upload' 对应 /labeler/upload/<int:task_id>/
+        var uploadUrl = "{% url 'labeler:upload' 0 %}".replace('0', taskId);
+        
+        // 设置表单 action
+        $('#uploadForm').attr('action', uploadUrl);
+        
+        // 显示模态框 (Bootstrap 3 写法)
+        $('#uploadModal').modal('show');
+    }
+</script>
 {% endblock %}

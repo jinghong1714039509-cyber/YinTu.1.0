@@ -1,55 +1,115 @@
+# apps/labeler/views.py
 import os
 import zipfile
+import json
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.conf import settings
 from django.contrib import messages
-# 1. 引入权限和缓存装饰器
-from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
 
-# 2. 【核心修改】引入我们自定义的 B 端权限装饰器
-# (确保您已经建立了 apps/core/decorators.py 文件)
+# 引入自定义装饰器
 from apps.core.decorators import labeler_required
-
 from apps.core.models import LabelTask, SampleImage, STATUS_READY
 
-# 3. 【修改】为所有视图添加 @labeler_required 装饰器
-# 注意顺序：@never_cache -> @labeler_required (它里面包含了登录校验)
+# ==========================================
+# 1. 全局配置：解剖部位标签 (双语版)
+# ==========================================
+LABEL_CONFIG = [
+    {'code': '0', 'name_cn': '0 牙齿',   'name_en': '0 Teeth',        'color': '#E74C3C'}, # 红
+    {'code': '1', 'name_cn': '1 舌头',   'name_en': '1 Tongue',       'color': '#2ECC71'}, # 绿
+    {'code': '2', 'name_cn': '2 悬雍垂', 'name_en': '2 Uvula',        'color': '#3498DB'}, # 蓝
+    {'code': '3', 'name_cn': '3 会厌',   'name_en': '3 Epiglottis',   'color': '#F1C40F'}, # 黄
+    {'code': '4', 'name_cn': '4 声门-1', 'name_en': '4 Glottis-CL-1', 'color': '#9B59B6'}, # 紫
+    {'code': '5', 'name_cn': '5 声门-2', 'name_en': '5 Glottis-CL-2', 'color': '#1ABC9C'}, # 青
+    {'code': '6', 'name_cn': '6 声门-3', 'name_en': '6 Glottis-CL-3', 'color': '#E67E22'}, # 橙
+    {'code': '7', 'name_cn': '7 气管环', 'name_en': '7 Ring',         'color': '#34495E'}, # 深蓝
+    {'code': '8', 'name_cn': '8 食道',   'name_en': '8 Esophagus',    'color': '#95A5A6'}, # 灰
+]
+
+# ==========================================
+# 2. 视图函数
+# ==========================================
 
 @never_cache
-@labeler_required  # <--- ✅ 新增：只允许标注员访问，如果是医生会报错或跳走
+@labeler_required
 def dashboard(request):
-    """
-    [B端] 首页：展示所有状态为'已就绪'的任务
-    对应 urls.py 中的 path('dashboard/', ...)
-    """
-    # 获取所有已就绪的任务，按时间倒序排列
+    """[B端] 首页：卡片化展示任务"""
     tasks = LabelTask.objects.filter(state=STATUS_READY).order_by('-created_at')
+    
+    # 预处理数据
+    for task in tasks:
+        if task.sample_count > 0:
+            task.progress = int((task.labeled_count / task.sample_count) * 100)
+        else:
+            task.progress = 0
+        
+        # 获取第一张图片作为入口
+        first_sample = task.samples.first()
+        task.first_sample_id = first_sample.id if first_sample else None
+
     return render(request, 'labeler/dashboard.html', {'tasks': tasks})
 
 @never_cache
-@labeler_required  # <--- ✅ 新增
+@labeler_required
 def gallery(request, task_id):
-    """
-    [B端] 图片预览墙 (分页展示防止卡顿)
-    """
+    """[B端] 图片预览墙"""
     task = get_object_or_404(LabelTask, id=task_id)
-    # 获取前 50 张图片作为预览
-    samples = task.samples.all()[:50] 
+    samples = task.samples.all()[:100]
     return render(request, 'labeler/gallery.html', {'task': task, 'samples': samples})
 
 @never_cache
-@labeler_required  # <--- ✅ 新增
+@labeler_required
+def annotate_page(request, sample_id):
+    """[B端] 在线标注工作台"""
+    sample = get_object_or_404(SampleImage, id=sample_id)
+    
+    # 获取下一张图片
+    next_sample = SampleImage.objects.filter(
+        task=sample.task, 
+        id__gt=sample.id
+    ).order_by('id').first()
+
+    return render(request, 'labeler/annotate.html', {
+        'sample': sample,
+        'next_sample': next_sample,
+        'task': sample.task,
+        'label_config': LABEL_CONFIG, # <--- 【关键修复】：必须传入配置！
+    })
+
+@require_POST
+@labeler_required
+def save_annotation_data(request, sample_id):
+    """[API] 保存标注数据"""
+    sample = get_object_or_404(SampleImage, id=sample_id)
+    try:
+        data = json.loads(request.body)
+        annotations = data.get('annotations', [])
+        
+        # 保存
+        sample.annotation_content = json.dumps(annotations, ensure_ascii=False)
+        sample.is_labeled = True
+        sample.labeled_by = request.user.username
+        sample.labeled_at = timezone.now()
+        sample.save()
+        
+        # 更新任务进度
+        task = sample.task
+        task.labeled_count = task.samples.filter(is_labeled=True).count()
+        task.save()
+
+        return JsonResponse({'status': 'ok', 'msg': '保存成功'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'msg': str(e)}, status=500)
+
+@never_cache
+@labeler_required
 def download_zip(request, task_id):
-    """
-    [B端] 打包下载脱敏图片
-    """
+    """[B端] 下载"""
     task = get_object_or_404(LabelTask, id=task_id)
-    
-    # 对应 hospital views 中生成的图片路径: media/upload/images/{code}
     images_dir = os.path.join(settings.MEDIA_ROOT, 'upload', 'images', task.code)
-    
     response = HttpResponse(content_type='application/zip')
     response['Content-Disposition'] = f'attachment; filename="{task.code}_images.zip"'
     
@@ -58,49 +118,35 @@ def download_zip(request, task_id):
             for root, dirs, files in os.walk(images_dir):
                 for file in files:
                     if file.lower().endswith(('.jpg', '.png', '.jpeg')):
-                        # 在ZIP中只保留文件名，不带绝对路径
                         zf.write(os.path.join(root, file), arcname=file)
     return response
 
 @never_cache
-@labeler_required  # <--- ✅ 新增
+@labeler_required
 def upload_annotation(request, task_id):
-    """
-    [B端] 上传标注结果 (ZIP)
-    """
+    """[B端] 上传"""
     if request.method == 'POST':
         task = get_object_or_404(LabelTask, id=task_id)
         anno_file = request.FILES.get('annotation_file')
         
         if not anno_file or not anno_file.name.endswith('.zip'):
-            messages.error(request, "请上传 .zip 格式的压缩包")
+            messages.error(request, "请上传 ZIP 格式")
             return redirect('labeler:gallery', task_id=task.id)
 
         try:
-            # 解压并匹配数据库
             with zipfile.ZipFile(anno_file, 'r') as zf:
                 for filename in zf.namelist():
-                    # 假设标注文件名为 img_0001.xml -> 对应图片 img_0001.jpg
                     base_name = os.path.splitext(os.path.basename(filename))[0]
-                    
-                    # 在数据库中查找对应的样本
-                    # 注意：original_name__startswith 是防止后缀不匹配
                     sample = SampleImage.objects.filter(task=task, original_name__startswith=base_name).first()
                     if sample:
-                        # 读取内容并保存
-                        content = zf.read(filename).decode('utf-8', errors='ignore')
-                        sample.annotation_content = content
+                        sample.annotation_content = zf.read(filename).decode('utf-8', errors='ignore')
                         sample.is_labeled = True
-                        # 确保 request.user 存在 (login_required 已保证)
                         sample.labeled_by = request.user.username 
                         sample.save()
-            
-            # 更新任务进度
             task.labeled_count = task.samples.filter(is_labeled=True).count()
             task.save()
-            messages.success(request, "标注上传成功！")
-            
+            messages.success(request, "上传成功")
         except Exception as e:
-            messages.error(request, f"处理失败: {e}")
+            messages.error(request, f"失败: {e}")
             
     return redirect('labeler:gallery', task_id=task.id)
