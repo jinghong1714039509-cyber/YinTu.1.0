@@ -5,65 +5,76 @@
 <div class="right_col" role="main">
   <div class="x_panel">
     <div class="x_title">
-      <h2>👥 用户账户管理 <small>仅管理员可见</small></h2>
+      <h2>👥 用户账户管理 <small>超级管理员后台</small></h2>
       <div class="clearfix"></div>
     </div>
     <div class="x_content">
-      <table class="table table-striped jambo_table">
-        <thead>
-          <tr class="headings">
-            <th>ID</th>
-            <th>用户名</th>
-            <th>角色 (Role)</th>
-            <th>注册时间</th>
-            <th>状态</th>
-            <th class="text-right">操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for u in users %}
-          <tr>
-            <td>{{ u.id }}</td>
-            <td>
-                <strong>{{ u.username }}</strong>
-                {% if u.is_superuser %} <span class="label label-danger">超级管理员</span> {% endif %}
-            </td>
-            <td>
-                {% if u.role == 'hospital' %}
-                    <span class="label label-primary">🏥 医院/医生</span>
-                {% elif u.role == 'labeler' %}
-                    <span class="label label-success">✍️ 标注员</span>
+      <div class="table-responsive">
+        <table class="table table-striped jambo_table bulk_action">
+          <thead>
+            <tr class="headings">
+              <th class="column-title">ID </th>
+              <th class="column-title">用户名 </th>
+              <th class="column-title">角色 & 科室 </th>
+              <th class="column-title">联系方式 </th>
+              <th class="column-title">注册时间 </th>
+              <th class="column-title text-right">管理操作 </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for u in users %}
+            <tr class="even pointer">
+              <td class="a-center ">{{ u.id }}</td>
+              <td>
+                  <b style="font-size: 14px;">{{ u.username }}</b>
+                  {% if u.is_superuser %}
+                      <span class="badge bg-red">超级管理员</span>
+                  {% endif %}
+              </td>
+              <td>
+                  {% if u.role == 'hospital' %}
+                      <span class="label label-primary">🏥 医生</span>
+                  {% elif u.role == 'labeler' %}
+                      <span class="label label-success">✍️ 标注员</span>
+                  {% endif %}
+                  
+                  {% if u.department %}
+                      <small style="color:#777; margin-left:5px;">({{ u.department }})</small>
+                  {% endif %}
+              </td>
+              <td>
+                  {{ u.phone|default:"-" }} <br>
+                  <small class="text-muted">{{ u.email }}</small>
+              </td>
+              <td>{{ u.date_joined|date:"Y-m-d H:i" }}</td>
+              
+              <td class="text-right">
+                {% if not u.is_superuser %}
+                    <a href="{% url 'users:user_reset' u.id %}" 
+                       class="btn btn-warning btn-sm" 
+                       onclick="return confirm('⚠️ 确定要重置密码吗？\n重置后密码将变为：123456')">
+                      <i class="fa fa-refresh"></i> 重置密码
+                    </a>
+                    
+                    <a href="{% url 'users:user_delete' u.id %}" 
+                       class="btn btn-danger btn-sm" 
+                       onclick="return confirm('⛔ 高危操作\n确定要永久删除用户 [{{ u.username }}] 吗？\n此操作不可恢复！')">
+                      <i class="fa fa-trash"></i> 删除账号
+                    </a>
                 {% else %}
-                    <span class="label label-default">未定义</span>
+                    <button class="btn btn-default btn-sm" disabled><i class="fa fa-shield"></i> 系统保护</button>
                 {% endif %}
-            </td>
-            <td>{{ u.date_joined|date:"Y-m-d H:i" }}</td>
-            <td>
-                {% if u.is_active %}
-                    <span class="text-success"><i class="fa fa-circle"></i> 正常</span>
-                {% else %}
-                    <span class="text-muted"><i class="fa fa-circle-o"></i> 禁用</span>
-                {% endif %}
-            </td>
-            <td class="text-right">
-              {% if not u.is_superuser %}
-                  <a href="{% url 'users:user_reset' u.id %}" class="btn btn-warning btn-xs" onclick="return confirm('确定将密码重置为 123456 吗？')">
-                    <i class="fa fa-key"></i> 重置密码
-                  </a>
-                  <a href="{% url 'users:user_delete' u.id %}" class="btn btn-danger btn-xs" onclick="return confirm('确定删除此用户？数据不可恢复！')">
-                    <i class="fa fa-trash"></i> 删除
-                  </a>
-              {% else %}
-                  <button class="btn btn-default btn-xs" disabled>系统保护</button>
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
       
-      <div class="alert alert-info">
-          <i class="fa fa-info-circle"></i> 提示：出于安全加密规则，无法直接查看原始密码。您可以点击“重置密码”将其强制修改为默认密码（如 123456），然后通知用户登录修改。
+      <div class="alert alert-info" style="margin-top: 20px;">
+          <strong><i class="fa fa-info-circle"></i> 管理员提示：</strong> 
+          出于安全加密规则，您无法直接查看用户的原始密码。如用户忘记密码，请点击 <b>“重置密码”</b> 将其恢复为默认密码 <code>123456</code>，并通知用户登录后自行修改。
       </div>
     </div>
   </div>

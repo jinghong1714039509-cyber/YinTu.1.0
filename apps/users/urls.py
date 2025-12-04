@@ -6,6 +6,7 @@ app_name = 'users'
 urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+    path('change-password/', views.change_password_view, name='change_password'),
     
     # 新增注册页 -> /users/register/
     path('register/', views.register_view, name='register'), 

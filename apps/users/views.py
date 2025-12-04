@@ -4,6 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 # ✅ 关键修复：必须引入 login_required 和 user_passes_test
 from django.contrib.auth.decorators import login_required, user_passes_test
+from .forms import RegisterForm
 
 # 尝试引入您自定义的注册表单
 try:
@@ -51,6 +52,32 @@ def register_view(request):
     else:
         form = RegisterForm()
     return render(request, 'users/register.html', {'form': form})
+@login_required
+def change_password_view(request):
+    """
+    [新增] 用户自行修改密码视图
+    """
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            # 关键：修改密码后更新 session，防止强制下线
+            update_session_auth_hash(request, user) 
+            messages.success(request, "密码修改成功！")
+            
+            # 根据角色跳回原来的页面
+            if user.is_superuser: return redirect('users:manage_list')
+            if user.role == 'labeler': return redirect('labeler:dashboard')
+            return redirect('hospital:index')
+        else:
+            messages.error(request, "请修正下面的错误")
+    else:
+        form = PasswordChangeForm(request.user)
+        # 给表单加样式
+        for field in form.fields.values():
+            field.widget.attrs.update({'class': 'form-control'})
+            
+    return render(request, 'users/change_password.html', {'form': form})
 
 # ==========================================
 #  超级管理员功能

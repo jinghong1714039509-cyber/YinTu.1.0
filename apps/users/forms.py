@@ -19,3 +19,23 @@ class RegisterForm(UserCreationForm):
         super().__init__(*args, **kwargs)
         self.fields['role'].label = "选择身份"
         self.fields['email'].required = True
+
+
+    class RegisterForm(UserCreationForm):
+        """
+        自定义注册表单：支持 email, phone, department
+        """
+    email = forms.EmailField(label="电子邮箱", required=True, widget=forms.EmailInput(attrs={'class': 'form-control'}))
+    phone = forms.CharField(label="联系电话", required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    department = forms.CharField(label="所属科室", required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例如：放射科'}))
+    
+    class Meta(UserCreationForm.Meta):
+        model = UserProfile
+        # 在这里定义表单中显示的字段顺序
+        fields = ('username', 'email', 'role', 'phone', 'department')
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 统一给所有字段加 Bootstrap 样式
+        for field in self.fields.values():
+            field.widget.attrs.update({'class': 'form-control'})
