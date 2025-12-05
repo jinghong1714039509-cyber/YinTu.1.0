@@ -1,19 +1,39 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, get_user_model
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib import messages
-# ✅ 关键修复：必须引入 login_required 和 user_passes_test
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .forms import RegisterForm
+from django.contrib.auth import update_session_auth_hash
+# ✅ 新增：分页和复杂查询工具
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Q
 
-# 尝试引入您自定义的注册表单
+# ✅ 新增：引入日志模型
+from .models import OperationLog
+
+# 尝试引入自定义表单
 try:
     from .forms import RegisterForm
 except ImportError:
-    # 如果没有自定义表单，为了防止报错，回退到系统默认
     from django.contrib.auth.forms import UserCreationForm as RegisterForm
 
 User = get_user_model()
+
+# ==========================================
+#  辅助函数
+# ==========================================
+def get_client_ip(request):
+    """获取客户端IP地址"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+# ==========================================
+#  普通用户功能
+# ==========================================
 
 def login_view(request):
     """用户登录"""
@@ -29,7 +49,7 @@ def login_view(request):
             elif getattr(user, 'role', '') == 'hospital':
                 return redirect('hospital:index')
             elif user.is_superuser:
-                return redirect('/admin/') # 或者去用户管理页 users:manage_list
+                return redirect('users:manage_list') 
             else:
                 return redirect('/')
     else:
@@ -52,20 +72,17 @@ def register_view(request):
     else:
         form = RegisterForm()
     return render(request, 'users/register.html', {'form': form})
+
 @login_required
 def change_password_view(request):
-    """
-    [新增] 用户自行修改密码视图
-    """
+    """用户自行修改密码"""
     if request.method == 'POST':
         form = PasswordChangeForm(request.user, request.POST)
         if form.is_valid():
             user = form.save()
-            # 关键：修改密码后更新 session，防止强制下线
             update_session_auth_hash(request, user) 
             messages.success(request, "密码修改成功！")
             
-            # 根据角色跳回原来的页面
             if user.is_superuser: return redirect('users:manage_list')
             if user.role == 'labeler': return redirect('labeler:dashboard')
             return redirect('hospital:index')
@@ -73,7 +90,6 @@ def change_password_view(request):
             messages.error(request, "请修正下面的错误")
     else:
         form = PasswordChangeForm(request.user)
-        # 给表单加样式
         for field in form.fields.values():
             field.widget.attrs.update({'class': 'form-control'})
             
@@ -99,11 +115,23 @@ def user_manage_list(request):
 def user_delete(request, user_id):
     """删除用户"""
     target_user = get_object_or_404(User, id=user_id)
+    target_name = target_user.username  # 记录名字
+    
     if target_user.is_superuser:
         messages.error(request, "不能删除超级管理员！")
     else:
         target_user.delete()
-        messages.success(request, f"用户 {target_user.username} 已删除")
+        
+        # ✅ 记录日志
+        OperationLog.objects.create(
+            operator=request.user,
+            action="删除用户",
+            target=target_name,
+            details=f"管理员删除了用户ID: {user_id}",
+            ip_address=get_client_ip(request)
+        )
+        
+        messages.success(request, f"用户 {target_name} 已删除")
     return redirect('users:manage_list')
 
 @login_required
@@ -111,8 +139,54 @@ def user_delete(request, user_id):
 def user_reset_password(request, user_id):
     """重置密码"""
     target_user = get_object_or_404(User, id=user_id)
-    # 重置为固定密码，方便管理，您也可以改为随机生成
     target_user.set_password("123456")
     target_user.save()
+    
+    # ✅ 记录日志
+    OperationLog.objects.create(
+        operator=request.user,
+        action="重置密码",
+        target=target_user.username,
+        details="管理员将密码重置为默认: 123456",
+        ip_address=get_client_ip(request)
+    )
+    
     messages.success(request, f"用户 {target_user.username} 的密码已重置为 '123456'")
     return redirect('users:manage_list')
+
+@login_required
+@user_passes_test(is_superuser)
+def operation_log_list(request):
+    """
+    ✅ [新增] 操作日志审计页面 (带服务端分页与搜索)
+    """
+    search_query = request.GET.get('q', '')
+    page_number = request.GET.get('page', 1)
+    
+    # 1. 基础查询 (优化查询性能)
+    logs_qs = OperationLog.objects.select_related('operator').all().order_by('-create_time')
+    
+    # 2. 搜索过滤
+    if search_query:
+        logs_qs = logs_qs.filter(
+            Q(operator__username__icontains=search_query) |
+            Q(action__icontains=search_query) |
+            Q(target__icontains=search_query) |
+            Q(ip_address__icontains=search_query)
+        )
+    
+    # 3. 分页处理 (每页 20 条)
+    paginator = Paginator(logs_qs, 20)
+    
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+        
+    context = {
+        'page_obj': page_obj,      # 当前页对象
+        'search_query': search_query, # 回填搜索框
+    }
+    return render(request, 'users/log_list.html', context)

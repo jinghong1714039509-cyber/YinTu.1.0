@@ -1,4 +1,7 @@
+from django.core.cache import cache
+from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
+
 
 class DisableBrowserCacheMiddleware(MiddlewareMixin):
     """
@@ -13,3 +16,14 @@ class DisableBrowserCacheMiddleware(MiddlewareMixin):
             response['Pragma'] = 'no-cache'
             response['Expires'] = '0'
         return response
+
+class ActiveUserMiddleware(MiddlewareMixin):
+    """
+    实时在线用户中间件
+    记录用户最后一次访问的时间，有效期设为5分钟（300秒）
+    """
+    def process_request(self, request):
+        if request.user.is_authenticated:
+            now = timezone.now()
+            # 缓存键：online_user_用户ID
+            cache.set(f'online_user_{request.user.id}', now, 300)

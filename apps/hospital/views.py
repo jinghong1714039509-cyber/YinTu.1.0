@@ -3,18 +3,17 @@ import cv2
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.contrib import messages
-# 1. 引入装饰器
+# 引入装饰器
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
-# 假设您已经按照上一步建好了 apps/core/decorators.py
 from apps.core.decorators import hospital_required 
 
 from apps.core.models import LabelTask, SampleImage, STATUS_READY, STATUS_ERROR
-from apps.core.utils import gen_random_code, encrypt_file
+# ✅ 修改：引入 log_operation
+from apps.core.utils import gen_random_code, encrypt_file, log_operation
 
-# 2. 修改：加上 @hospital_required
 @never_cache
-@hospital_required  # <--- 关键修改：只有医院角色能进
+@hospital_required
 def add_task(request):
     """A端：新建任务"""
     if request.method == 'POST':
@@ -65,6 +64,14 @@ def add_task(request):
                 os.makedirs(public_images_dir)
             
             process_video(task, video_path, public_images_dir, extract_fps=1)
+
+            # ✅ 【新增】记录操作日志
+            log_operation(
+                request, 
+                action="新建任务", 
+                target=task.name, 
+                details=f"上传视频并创建任务，任务编码: {task.code}"
+            )
 
             messages.success(request, "任务创建成功！图片正在后台生成...")
             return redirect('hospital:index')
@@ -122,9 +129,8 @@ def process_video(task, video_abs_path, output_dir, extract_fps=1):
         task.state = STATUS_ERROR
         task.save()
 
-# 3. 修改：加上 @hospital_required
 @never_cache
-@hospital_required  # <--- 关键修改：只有医院角色能进
+@hospital_required
 def index(request):
     """A端列表"""
     # 还可以加一步：只显示当前用户创建的任务 (可选)

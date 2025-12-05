@@ -33,11 +33,17 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    # 'django.middleware.csrf.CsrfViewMiddleware', # 初学者建议暂时注释，避免跨域报错
+    # 'django.middleware.csrf.CsrfViewMiddleware',  # 之前注释掉的保持原样
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    
+    # ✅ 必须保留这个，否则 admin 会报错
     'django.contrib.messages.middleware.MessageMiddleware',
+    
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'apps.core.middleware.DisableBrowserCacheMiddleware',
+
+    # ✅ 新增的在线监控中间件放在这里 (在 AuthenticationMiddleware 之后即可)
+    'apps.core.middleware.ActiveUserMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -92,3 +98,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/users/login/'
 AUTH_USER_MODEL = 'users.UserProfile'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}

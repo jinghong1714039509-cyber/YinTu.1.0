@@ -14,4 +14,6 @@ urlpatterns = [
     path('manage/', views.user_manage_list, name='manage_list'),
     path('manage/delete/<int:user_id>/', views.user_delete, name='user_delete'),
     path('manage/reset/<int:user_id>/', views.user_reset_password, name='user_reset'),
+    # ✅ 【新增】日志审计页面路由
+    path('logs/', views.operation_log_list, name='log_list'),
 ]

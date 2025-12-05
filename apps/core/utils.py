@@ -5,6 +5,8 @@ import string
 import time
 from cryptography.fernet import Fernet
 from django.conf import settings
+# 动态引入模型，防止循环引用
+from django.apps import apps
 
 # 生成随机编号 (如 TK20231130...)
 def gen_random_code(prefix="TK", length=4):
@@ -29,7 +31,34 @@ def encrypt_file(file_data):
     cipher = get_cipher_suite()
     return cipher.encrypt(file_data)
 
-# 简单的分页页码生成器 (对应旧项目的 buildPageLabels)
+# 简单的分页页码生成器
 def build_page_labels(current_page, total_pages):
-    # 简单实现：返回 [1, 2, 3, ...]
     return [{"page": i, "cur": 1 if i == current_page else 0, "name": str(i)} for i in range(1, total_pages + 1)]
+
+# ✅ [新增] 获取客户端 IP
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+# ✅ [新增] 通用日志记录函数
+def log_operation(request, action, target, details=""):
+    """
+    全站通用的日志记录入口
+    """
+    if request.user.is_authenticated:
+        # 动态获取模型，避免循环导入 user.models
+        try:
+            OperationLog = apps.get_model('users', 'OperationLog')
+            OperationLog.objects.create(
+                operator=request.user,
+                action=action,
+                target=target,
+                details=details,
+                ip_address=get_client_ip(request)
+            )
+        except Exception as e:
+            print(f"日志记录失败: {e}")

@@ -14,6 +14,8 @@ from django.contrib.auth.decorators import login_required
 # 引入自定义装饰器
 from apps.core.decorators import labeler_required
 from apps.core.models import LabelTask, SampleImage, STATUS_READY
+# 引入日志工具
+from apps.core.utils import log_operation
 
 # ==========================================
 # 1. 全局配置：解剖部位标签 (双语版)
@@ -66,18 +68,34 @@ def gallery(request, task_id):
 def annotate_page(request, sample_id):
     """[B端] 在线标注工作台"""
     sample = get_object_or_404(SampleImage, id=sample_id)
+    task = sample.task
     
     # 获取下一张图片
     next_sample = SampleImage.objects.filter(
-        task=sample.task, 
+        task=task, 
         id__gt=sample.id
     ).order_by('id').first()
+
+    # ✅ 【优化日志逻辑】：利用 Session 防抖动
+    # 只有当 Session 里记录的 'last_view_task' 与当前不一致时，才记录日志
+    # 这样用户在同一个任务里点 "下一张" 不会产生刷屏日志
+    last_task_id = request.session.get('last_view_task_id')
+    
+    if last_task_id != task.id:
+        log_operation(
+            request, 
+            action="开始标注任务", 
+            target=task.name, 
+            details=f"用户进入了任务 {task.code} 的标注工作台"
+        )
+        # 更新 Session 状态
+        request.session['last_view_task_id'] = task.id
 
     return render(request, 'labeler/annotate.html', {
         'sample': sample,
         'next_sample': next_sample,
-        'task': sample.task,
-        'label_config': LABEL_CONFIG, # <--- 【关键修复】：必须传入配置！
+        'task': task,
+        'label_config': LABEL_CONFIG, 
     })
 
 @require_POST
@@ -101,6 +119,16 @@ def save_annotation_data(request, sample_id):
         task.labeled_count = task.samples.filter(is_labeled=True).count()
         task.save()
 
+        # ✅ 保存是一个明确的操作动作，建议保留记录，或者改为"每10次保存记录一次"
+        # 这里为了防止太频繁，可以把保存日志也注释掉，或者只记录关键信息
+        # 如果您觉得保存也不需要记录，可以删掉下面这段：
+        log_operation(
+            request, 
+            action="保存标注", 
+            target=sample.original_name, 
+            details=f"用户 {request.user.username} 更新了标注数据"
+        )
+
         return JsonResponse({'status': 'ok', 'msg': '保存成功'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'msg': str(e)}, status=500)
@@ -110,6 +138,15 @@ def save_annotation_data(request, sample_id):
 def download_zip(request, task_id):
     """[B端] 下载"""
     task = get_object_or_404(LabelTask, id=task_id)
+    
+    # 下载属于低频高危操作，建议保留日志
+    log_operation(
+        request, 
+        action="下载数据集", 
+        target=task.name, 
+        details=f"下载任务 {task.code} 的所有图片"
+    )
+
     images_dir = os.path.join(settings.MEDIA_ROOT, 'upload', 'images', task.code)
     response = HttpResponse(content_type='application/zip')
     response['Content-Disposition'] = f'attachment; filename="{task.code}_images.zip"'
@@ -146,29 +183,41 @@ def upload_annotation(request, task_id):
                         sample.save()
             task.labeled_count = task.samples.filter(is_labeled=True).count()
             task.save()
+
+            log_operation(
+                request, 
+                action="上传标注包", 
+                target=task.name, 
+                details="批量上传覆盖标注数据"
+            )
+
             messages.success(request, "上传成功")
         except Exception as e:
             messages.error(request, f"失败: {e}")
             
     return redirect('labeler:gallery', task_id=task.id)
+
 def is_superuser(user):
     return user.is_superuser
 
 @never_cache
 @login_required
-@user_passes_test(is_superuser)  # 只有管理员能访问
+@user_passes_test(is_superuser)  
 def delete_task(request, task_id):
     """
     [管理员功能] 删除任务及关联文件
     """
     task = get_object_or_404(LabelTask, id=task_id)
+    task_code = task.code 
     
-    # 1. 删除物理文件 (可选，建议保留以免误删，或者由信号处理)
-    # 这里简单起见，只删数据库记录，Django 会级联删除 SampleImage
-    # 如果需要删物理文件，需要配合 shutil.rmtree 清理 media 目录
-    
-    # 2. 删除数据库记录
     task.delete()
     
-    messages.success(request, f"任务 {task.code} 已删除")
+    log_operation(
+        request, 
+        action="删除任务", 
+        target=task_code, 
+        details="管理员强制删除了任务"
+    )
+
+    messages.success(request, f"任务 {task_code} 已删除")
     return redirect('labeler:dashboard')

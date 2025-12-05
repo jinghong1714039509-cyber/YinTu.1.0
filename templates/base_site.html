@@ -8,6 +8,7 @@
     <title>{% block title %}医疗数据平台{% endblock %}</title>
     
     <link href="/static/vendors/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <link href="/static/vendors/font-awesome/css/font-awesome.min.css" rel="stylesheet">
     <link href="/static/vendors/nprogress/nprogress.css" rel="stylesheet">
     <link href="/static/build/css/custom.min.css" rel="stylesheet">
@@ -33,37 +34,25 @@
         /* =========================================
            2. 下拉菜单终极修复 (解决点击不显示/位置错乱)
            ========================================= */
-        
-        /* 允许顶部导航溢出，防止菜单被裁剪 */
-        .top_nav .nav_menu {
-            overflow: visible !important;
-        }
-        
-        /* 给父级 li 建立定位基准，防止菜单跑到页面(0,0)坐标 */
-        .navbar-nav > li {
-            position: relative !important;
-        }
+        .top_nav .nav_menu { overflow: visible !important; }
+        .navbar-nav > li { position: relative !important; }
     
-        /* 下拉菜单样式重置 */
         .navbar-right .dropdown-menu {
             position: absolute !important;
-            top: 100% !important; /* 在头像正下方 */
+            top: 100% !important;
             right: 0 !important;
             left: auto !important;
-            z-index: 99999 !important; /* 保证最顶层 */
+            z-index: 99999 !important;
             margin-top: 2px;
             background-color: #fff;
             border: 1px solid #d9d9d9;
             box-shadow: 0 6px 12px rgba(0,0,0,.175);
-            display: none; /* 默认隐藏 */
+            display: none; 
         }
         
-        /* 🔥 关键：当 JS 添加 open 类时，强制显示菜单 */
-        .navbar-nav > li.open .dropdown-menu {
-            display: block !important;
-        }
+        /* 关键：当 JS 添加 open 类时，强制显示菜单 */
+        .navbar-nav > li.open .dropdown-menu { display: block !important; }
     
-        /* 头像点击区域层级 */
         .user-profile {
             position: relative !important;
             z-index: 9999 !important;
@@ -77,7 +66,7 @@
             border: none !important;
             border-radius: 8px !important;
             background-color: #fff !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important; /* 悬浮阴影 */
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important;
             margin-bottom: 20px;
             padding: 20px !important;
         }
@@ -117,16 +106,14 @@
                             <h3>🛡️ 超级管理员</h3>
                             <ul class="nav side-menu">
                                 <li><a href="{% url 'users:manage_list' %}"><i class="fa fa-users"></i> 账号与权限管理</a></li>
-                                <li><a href="{% url 'labeler:dashboard' %}"><i class="fa fa-eye"></i> 进入标注端监控</a></li>
-                                <li><a href="{% url 'hospital:index' %}"><i class="fa fa-hospital-o"></i> 进入医院端监控</a></li>
-                                <li><a href="/admin/"><i class="fa fa-cogs"></i> Django 后台</a></li>
+                                <li><a href="{% url 'users:log_list' %}"><i class="fa fa-history"></i> 操作日志</a></li>
                             </ul>
                         </div>
                         {% endif %}
 
                         {% if user.role == 'hospital' or user.is_superuser %}
                         <div class="menu_section">
-                            <h3>A端 / 医院</h3>
+                            <h3> 医院</h3>
                             <ul class="nav side-menu">
                                 <li><a href="{% url 'hospital:add' %}"><i class="fa fa-plus-circle"></i> 新建病例任务</a></li>
                                 <li><a href="{% url 'hospital:index' %}"><i class="fa fa-list-ul"></i> 任务状态列表</a></li>
@@ -136,7 +123,7 @@
 
                         {% if user.role == 'labeler' or user.is_superuser %}
                         <div class="menu_section">
-                            <h3>B端 / 标注</h3>
+                            <h3> 标注</h3>
                             <ul class="nav side-menu">
                                 <li><a href="{% url 'labeler:dashboard' %}"><i class="fa fa-folder-open"></i> 任务领取大厅</a></li>
                             </ul>
@@ -203,40 +190,32 @@
 
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    
     <script src="https://cdn.bootcdn.net/ajax/libs/fastclick/1.0.6/fastclick.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
-    
     <script src="/static/build/js/custom.min.js"></script>
     
     {% block js %}{% endblock %}
 
     <script>
     $(document).ready(function() {
-        // 1. 点击头像：切换 'open' 类
+        // 点击头像切换菜单
         $('.user-profile').on('click', function(e) {
-            // 阻止冒泡，防止被其他脚本拦截
             e.stopPropagation();
             e.preventDefault();
-            
-            var $parent = $(this).parent(); // 获取 li
-            
-            // 切换 open 类 (CSS 中定义了 .open .dropdown-menu { display: block })
+            var $parent = $(this).parent();
             if ($parent.hasClass('open')) {
                 $parent.removeClass('open');
             } else {
-                // 先关闭其他菜单
                 $('.navbar-nav > li').removeClass('open');
                 $parent.addClass('open');
             }
         });
 
-        // 2. 点击页面空白处：关闭菜单
+        // 点击空白处关闭菜单
         $(document).on('click', function() {
             $('.navbar-nav > li').removeClass('open');
         });
         
-        // 3. 阻止菜单内部点击关闭 (防止误操作)
         $('.dropdown-menu').on('click', function(e){
             e.stopPropagation();
         });
