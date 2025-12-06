@@ -19,6 +19,15 @@ class UserProfile(AbstractUser):
     department = models.CharField(max_length=50, verbose_name='所属科室', null=True, blank=True)
     notes = models.TextField(verbose_name='备注信息', null=True, blank=True)
     
+    # ✅ [新增] 用户头像字段 (用于后续个人中心)
+    # default 指向的是 static/images/user.png，请确保该文件存在
+    avatar = models.ImageField(
+        upload_to='avatars/%Y/%m/', 
+        default='images/user.png', 
+        verbose_name='用户头像',
+        null=True, blank=True
+    )
+    
     class Meta:
         verbose_name = '用户信息'
         verbose_name_plural = verbose_name

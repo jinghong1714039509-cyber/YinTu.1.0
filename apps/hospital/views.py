@@ -1,8 +1,10 @@
 import os
 import cv2
+import threading
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.contrib import messages
+from django.db import connection
 # 引入装饰器
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
@@ -29,12 +31,13 @@ def add_task(request):
             user = request.user 
             creator_id = user.id
 
+            # 创建任务，初始状态为 0 (处理中)
             task = LabelTask.objects.create(
                 code=gen_random_code("TK"),
                 name=name,
                 remark=remark,
                 creator_id=creator_id,
-                state=0 # 处理中
+                state=0 
             )
 
             # 1. 保存加密文件 (如果有)
@@ -58,22 +61,27 @@ def add_task(request):
             task.source_video_path = os.path.join('secure_data', task.code, f'source{video_ext}')
             task.save()
 
-            # 3. 执行抽帧
+            # 3. ✅ 关键修改：启动异步线程执行抽帧
             public_images_dir = os.path.join(settings.MEDIA_ROOT, 'upload', 'images', task.code)
             if not os.path.exists(public_images_dir):
                 os.makedirs(public_images_dir)
             
-            process_video(task, video_path, public_images_dir, extract_fps=1)
+            # 使用 Thread 开启后台任务
+            thread = threading.Thread(
+                target=process_video_thread,  # 指向下面的新函数
+                args=(task.id, video_path, public_images_dir, 1) # 传 ID 而不是对象，防止线程冲突
+            )
+            thread.start()
 
-            # ✅ 【新增】记录操作日志
+            # 记录日志
             log_operation(
                 request, 
                 action="新建任务", 
                 target=task.name, 
-                details=f"上传视频并创建任务，任务编码: {task.code}"
+                details=f"任务 {task.code} 已创建，后台正在解压处理视频..."
             )
 
-            messages.success(request, "任务创建成功！图片正在后台生成...")
+            messages.success(request, "任务创建成功！视频正在后台处理，请稍后刷新查看进度。")
             return redirect('hospital:index')
 
         except Exception as e:
@@ -81,13 +89,32 @@ def add_task(request):
     
     return render(request, 'hospital/add_task.html')
 
-def process_video(task, video_abs_path, output_dir, extract_fps=1):
+def process_video_thread(task_id, video_abs_path, output_dir, extract_fps=1):
     """
-    视频抽帧逻辑 (保持不变)
+    ✅ 新增：线程安全的视频处理函数
+    """
+    # 在线程开始时，重新获取 task 对象，避免数据库连接问题
+    try:
+        # 显式关闭旧连接，强制线程建立新连接
+        connection.close() 
+        task = LabelTask.objects.get(id=task_id)
+        
+        process_video_logic(task, video_abs_path, output_dir, extract_fps)
+        
+    except Exception as e:
+        print(f"线程异常: {e}")
+    finally:
+        connection.close()
+
+def process_video_logic(task, video_abs_path, output_dir, extract_fps=1):
+    """
+    原有的处理逻辑，移动到这里
     """
     try:
         cap = cv2.VideoCapture(video_abs_path)
         if not cap.isOpened():
+            task.state = STATUS_ERROR
+            task.save()
             return
 
         video_fps = cap.get(cv2.CAP_PROP_FPS)
@@ -106,6 +133,7 @@ def process_video(task, video_abs_path, output_dir, extract_fps=1):
                 file_name = f"img_{saved_count:05d}.jpg"
                 save_path = os.path.join(output_dir, file_name)
                 
+                # 压缩图片质量，进一步减少卡顿和存储
                 cv2.imwrite(save_path, frame, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
 
                 SampleImage.objects.create(
@@ -122,10 +150,10 @@ def process_video(task, video_abs_path, output_dir, extract_fps=1):
         task.sample_count = saved_count
         task.state = STATUS_READY
         task.save()
-        print(f"任务 {task.code} 处理完成，保留了 {saved_count} 张图片")
+        print(f"✅ 任务 {task.code} 后台处理完成，生成 {saved_count} 张图片")
 
     except Exception as e:
-        print(f"视频处理异常: {e}")
+        print(f"❌ 视频处理异常: {e}")
         task.state = STATUS_ERROR
         task.save()
 
