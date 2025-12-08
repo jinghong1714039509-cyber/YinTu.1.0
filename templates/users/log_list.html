@@ -1,167 +1,152 @@
 {% extends "base_site.html" %}
 {% block title %}全站操作日志{% endblock %}
 
-{% block content %}
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
-
-<div id="log-app" class="right_col" role="main">
-    <div class="min-h-screen p-6">
+{% block css %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { corePlugins: { preflight: false } }
+    </script>
+    <style>
+        /* 核心：隐藏未编译的 Vue 元素 */
+        [v-cloak] { display: none !important; }
         
-        <div class="max-w-7xl mx-auto space-y-6">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    <i data-lucide="history" class="w-8 h-8 text-indigo-600"></i>
-                    全站操作审计
-                </h1>
-                <div class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg text-sm font-medium border border-indigo-100">
-                    总记录数: {{ page_obj.paginator.count }}
-                </div>
-            </div>
+        /* 避免布局跳动：确保表格容器有最小高度 */
+        .table-container { min-height: 200px; }
+    </style>
+{% endblock %}
 
-            <div class="bg-white p-5 rounded-xl border shadow-sm">
-                <form method="GET" action="." class="flex flex-col sm:flex-row gap-3">
-                    <div class="relative flex-1">
-                        <i data-lucide="search" class="absolute left-3 top-3 h-5 w-5 text-gray-400"></i>
-                        <input 
-                            type="text" 
-                            name="q"
-                            value="{{ search_query }}"
-                            placeholder="输入用户名、动作、操作对象或IP进行检索..." 
-                            class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 focus:bg-white transition text-sm"
-                        >
-                    </div>
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2">
-                        <i data-lucide="search" class="w-4 h-4"></i> 搜索
-                    </button>
-                    {% if search_query %}
-                    <a href="{% url 'users:log_list' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center">
-                        重置
-                    </a>
-                    {% endif %}
-                </form>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
-                            <tr>
-                                <th class="px-6 py-3 border-b">时间</th>
-                                <th class="px-6 py-3 border-b">操作人</th>
-                                <th class="px-6 py-3 border-b">动作</th>
-                                <th class="px-6 py-3 border-b">目标对象 & 详情</th>
-                                <th class="px-6 py-3 border-b">来源 IP</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100 text-sm">
-                            <tr v-for="log in logs" :key="log.id" class="hover:bg-indigo-50/30 transition duration-150 group">
-                                <td class="px-6 py-3 text-gray-500 font-mono text-xs whitespace-nowrap">
-                                    [[ log.time ]]
-                                </td>
-                                <td class="px-6 py-3">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-8 h-8 rounded-full bg-gray-100 border flex items-center justify-center text-xs font-bold text-gray-600">
-                                            [[ log.operator ? log.operator.charAt(0).toUpperCase() : '?' ]]
-                                        </div>
-                                        <span class="font-medium text-slate-700">[[ log.operator ]]</span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-3">
-                                    <span :class="getActionBadge(log.action)" class="px-2 py-0.5 rounded-md text-xs font-medium border inline-block">
-                                        [[ log.action ]]
-                                    </span>
-                                </td>
-                                <td class="px-6 py-3">
-                                    <div class="flex flex-col">
-                                        <span class="font-medium text-slate-800">[[ log.target ]]</span>
-                                        <span class="text-xs text-gray-400 truncate max-w-xs" :title="log.details">[[ log.details ]]</span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-3 text-gray-400 text-xs font-mono">
-                                    [[ log.ip ]]
-                                </td>
-                            </tr>
-                            <tr v-if="logs.length === 0">
-                                <td colspan="5" class="px-6 py-10 text-center text-gray-400">
-                                    <div class="flex flex-col items-center gap-2">
-                                        <i data-lucide="inbox" class="w-10 h-10 opacity-30"></i>
-                                        <p>暂无日志数据</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                {% if page_obj.has_other_pages %}
-                <div class="bg-gray-50 px-6 py-4 border-t flex items-center justify-between">
-                    <div class="text-xs text-gray-500">
-                        第 {{ page_obj.number }} 页 / 共 {{ page_obj.paginator.num_pages }} 页
-                    </div>
-                    <div class="flex gap-2">
-                        {% if page_obj.has_previous %}
-                            <a href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}" class="px-3 py-1.5 bg-white border border-gray-300 rounded hover:bg-indigo-50 text-sm transition">上一页</a>
-                        {% else %}
-                            <span class="px-3 py-1.5 bg-gray-100 border border-gray-200 rounded text-gray-400 text-sm cursor-not-allowed">上一页</span>
-                        {% endif %}
-
-                        {% if page_obj.has_next %}
-                            <a href="?page={{ page_obj.next_page_number }}&q={{ search_query }}" class="px-3 py-1.5 bg-white border border-gray-300 rounded hover:bg-indigo-50 text-sm transition">下一页</a>
-                        {% else %}
-                            <span class="px-3 py-1.5 bg-gray-100 border border-gray-200 rounded text-gray-400 text-sm cursor-not-allowed">下一页</span>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
-            </div>
+{% block content %}
+<div class="right_col" role="main" style="min-height: 100vh;">
+    
+    <div id="log-app" v-cloak>
+        <div class="min-h-screen p-6">
             
+            <div class="max-w-7xl mx-auto space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2 m-0 border-0">
+                        <i data-lucide="history" class="w-8 h-8 text-indigo-600"></i>
+                        全站操作审计
+                    </h1>
+                    <div class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg text-sm font-medium border border-indigo-100">
+                        总记录数: {{ page_obj.paginator.count }}
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border shadow-sm">
+                    <form method="GET" action="." class="flex flex-col sm:flex-row gap-3 m-0">
+                        <div class="relative flex-1">
+                            <i data-lucide="search" class="absolute left-3 top-3 h-5 w-5 text-gray-400"></i>
+                            <input type="text" name="q" value="{{ search_query }}" placeholder="输入用户名、动作、操作对象或IP..." class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 focus:bg-white transition text-sm">
+                        </div>
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 border-0">
+                            <i data-lucide="search" class="w-4 h-4"></i> 搜索
+                        </button>
+                        {% if search_query %}
+                        <a href="{% url 'users:log_list' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center no-underline">重置</a>
+                        {% endif %}
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden table-container">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+                                <tr>
+                                    <th class="px-6 py-3 border-b">时间</th>
+                                    <th class="px-6 py-3 border-b">操作人</th>
+                                    <th class="px-6 py-3 border-b">动作</th>
+                                    <th class="px-6 py-3 border-b">目标对象 & 详情</th>
+                                    <th class="px-6 py-3 border-b">来源 IP</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-sm">
+                                <tr v-for="log in logs" :key="log.id" class="hover:bg-indigo-50/30 transition duration-150 group">
+                                    <td class="px-6 py-3 text-gray-500 font-mono text-xs whitespace-nowrap">[[ log.time ]]</td>
+                                    <td class="px-6 py-3">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-gray-100 border flex items-center justify-center text-xs font-bold text-gray-600">[[ log.operator ? log.operator.charAt(0).toUpperCase() : '?' ]]</div>
+                                            <span class="font-medium text-slate-700">[[ log.operator ]]</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-3">
+                                        <span :class="getActionBadge(log.action)" class="px-2 py-0.5 rounded-md text-xs font-medium border inline-block">[[ log.action ]]</span>
+                                    </td>
+                                    <td class="px-6 py-3">
+                                        <div class="flex flex-col">
+                                            <span class="font-medium text-slate-800">[[ log.target ]]</span>
+                                            <span class="text-xs text-gray-400 truncate max-w-xs" :title="log.details">[[ log.details ]]</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-3 text-gray-400 text-xs font-mono">[[ log.ip ]]</td>
+                                </tr>
+                                <tr v-if="logs.length === 0">
+                                    <td colspan="5" class="px-6 py-10 text-center text-gray-400">暂无数据</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if page_obj.has_other_pages %}
+                    <div class="bg-gray-50 px-6 py-4 border-t flex items-center justify-between">
+                        <div class="text-xs text-gray-500">第 {{ page_obj.number }} 页 / 共 {{ page_obj.paginator.num_pages }} 页</div>
+                        <div class="flex gap-2">
+                            {% if page_obj.has_previous %}
+                                <a href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}" class="px-3 py-1.5 bg-white border border-gray-300 rounded hover:bg-indigo-50 text-sm transition no-underline text-gray-600">上一页</a>
+                            {% else %}
+                                <span class="px-3 py-1.5 bg-gray-100 border border-gray-200 rounded text-gray-400 text-sm cursor-not-allowed">上一页</span>
+                            {% endif %}
+                            {% if page_obj.has_next %}
+                                <a href="?page={{ page_obj.next_page_number }}&q={{ search_query }}" class="px-3 py-1.5 bg-white border border-gray-300 rounded hover:bg-indigo-50 text-sm transition no-underline text-gray-600">下一页</a>
+                            {% else %}
+                                <span class="px-3 py-1.5 bg-gray-100 border border-gray-200 rounded text-gray-400 text-sm cursor-not-allowed">下一页</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<script>
-    const { createApp, ref, onMounted } = Vue;
+{% block js %}
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-    createApp({
-        delimiters: ['[[', ']]'],
-        setup() {
-            // 注入后端分页后的数据 (仅当前页)
-            const logs = ref([
-                {% for log in page_obj %}
-                {
-                    id: "{{ log.id }}",
-                    operator: "{{ log.operator.username|default:'未知用户'|escapejs }}",
-                    action: "{{ log.action|escapejs }}",
-                    target: "{{ log.target|default:''|escapejs }}",
-                    details: "{{ log.details|default:''|escapejs }}",
-                    ip: "{{ log.ip_address|default:'-' }}",
-                    time: "{{ log.create_time|date:'Y-m-d H:i:s' }}"
-                },
-                {% endfor %}
-            ]);
-
-            // 徽标颜色逻辑
-            const getActionBadge = (action) => {
-                if (action.includes('删除')) return 'bg-red-50 text-red-600 border-red-100';
-                if (action.includes('新建') || action.includes('上传')) return 'bg-blue-50 text-blue-600 border-blue-100';
-                if (action.includes('下载')) return 'bg-purple-50 text-purple-600 border-purple-100';
-                if (action.includes('保存') || action.includes('修改')) return 'bg-green-50 text-green-600 border-green-100';
-                if (action.includes('登录') || action.includes('注销')) return 'bg-slate-100 text-slate-600 border-slate-200';
-                if (action.includes('重置')) return 'bg-orange-50 text-orange-600 border-orange-100';
-                return 'bg-gray-50 text-gray-600 border-gray-200';
-            };
-
-            onMounted(() => {
-                if (window.lucide) window.lucide.createIcons();
-            });
-
-            return {
-                logs,
-                getActionBadge
-            };
-        }
-    }).mount('#log-app');
-</script>
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+        createApp({
+            delimiters: ['[[', ']]'],
+            setup() {
+                const logs = ref([
+                    {% for log in page_obj %}
+                    {
+                        id: "{{ log.id }}",
+                        operator: "{{ log.operator.username|default:'未知用户'|escapejs }}",
+                        action: "{{ log.action|escapejs }}",
+                        target: "{{ log.target|default:''|escapejs }}",
+                        details: "{{ log.details|default:''|escapejs }}",
+                        ip: "{{ log.ip_address|default:'-' }}",
+                        time: "{{ log.create_time|date:'Y-m-d H:i:s' }}"
+                    },
+                    {% endfor %}
+                ]);
+                const getActionBadge = (action) => {
+                    if (action.includes('删除')) return 'bg-red-50 text-red-600 border-red-100';
+                    if (action.includes('新建') || action.includes('上传')) return 'bg-blue-50 text-blue-600 border-blue-100';
+                    if (action.includes('下载')) return 'bg-purple-50 text-purple-600 border-purple-100';
+                    if (action.includes('保存') || action.includes('修改')) return 'bg-green-50 text-green-600 border-green-100';
+                    if (action.includes('登录') || action.includes('注销')) return 'bg-slate-100 text-slate-600 border-slate-200';
+                    return 'bg-gray-50 text-gray-600 border-gray-200';
+                };
+                onMounted(() => { 
+                    setTimeout(() => {
+                        if (window.lucide) window.lucide.createIcons();
+                    }, 50);
+                });
+                return { logs, getActionBadge };
+            }
+        }).mount('#log-app');
+    </script>
 {% endblock %}

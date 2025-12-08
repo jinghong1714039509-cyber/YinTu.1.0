@@ -1,110 +1,145 @@
-{% extends "common/base.html" %}
+{% extends "base_site.html" %}
+{% load static %}
+
+{% block title %}新建病例任务{% endblock %}
 
 {% block content %}
-<style>
-    .medical-card {
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 5px 25px rgba(0,0,0,0.05);
-        border-top: 5px solid #27ae60;
-        padding: 40px 50px;
-        margin-top: 20px;
-    }
-    .upload-zone-wrapper {
-        position: relative;
-        width: 100%;
-        height: 180px;
-        background: #f9fbfc;
-        border: 2px dashed #bdc3c7;
-        border-radius: 8px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-    }
-    .upload-zone-wrapper:hover { border-color: #27ae60; background: #f0fff4; }
-    .upload-zone-wrapper input[type="file"] {
-        position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer;
-    }
-    .upload-text { text-align: center; color: #7f8c8d; }
-    .upload-text i { font-size: 40px; margin-bottom: 10px; display: block; }
-    .file-name { color: #27ae60; font-weight: bold; display: none; margin-top: 10px;}
-</style>
+<div class="right_col" role="main" style="min-height: 100vh;">
+    <div class="">
+        
+        <div class="page-title">
+            <div class="title_left">
+                <h3>新建病例任务</h3>
+            </div>
+        </div>
+        
+        <div class="clearfix"></div>
 
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="medical-card">
-                <h3 class="mb-4"><i class="fa fa-plus-circle"></i> 新建病例任务</h3>
-                
-                <form method="post" enctype="multipart/form-data" id="upload-form">
-                    {% csrf_token %}
+        <div class="row">
+            <div class="col-md-12 col-sm-12 col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title">
+                        <h2>任务详情 <small>请填写信息并上传数据</small></h2>
+                        <ul class="nav navbar-right panel_toolbox">
+                            <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a></li>
+                        </ul>
+                        <div class="clearfix"></div>
+                    </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">任务名称 <span class="text-danger">*</span></label>
-                        <input type="text" name="name" class="form-control" required placeholder="例如：张三_心脏造影">
-                    </div>
+                    <div class="x_content">
+                        <br />
+                        
+                        <form id="add-task-form" method="post" enctype="multipart/form-data" class="form-horizontal form-label-left">
+                            {% csrf_token %}
 
-                    <div class="mb-3">
-                        <label class="form-label">病情备注</label>
-                        <textarea name="remark" class="form-control" rows="2"></textarea>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label text-danger"><i class="fa fa-lock"></i> 病例文件 (加密)</label>
-                            <div class="upload-zone-wrapper">
-                                <input type="file" name="patient_file" onchange="showFile(this)">
-                                <div class="upload-text">
-                                    <i class="fa fa-file-text"></i>
-                                    <span>点击上传病例</span>
-                                    <div class="file-name"></div>
+                            <div class="form-group">
+                                <label class="control-label col-md-3 col-sm-3 col-xs-12">
+                                    任务名称 <span style="color: red">*</span>
+                                </label>
+                                <div class="col-md-6 col-sm-6 col-xs-12">
+                                    <input type="text" name="name" required="required" class="form-control" placeholder="例如：张三_心脏造影_2023">
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-primary"><i class="fa fa-film"></i> 视频源 (抽帧)</label>
-                            <div class="upload-zone-wrapper">
-                                <input type="file" name="video_file" required onchange="showFile(this)">
-                                <div class="upload-text">
-                                    <i class="fa fa-video-camera"></i>
-                                    <span>点击上传视频</span>
-                                    <div class="file-name"></div>
+
+                            <div class="form-group">
+                                <label class="control-label col-md-3 col-sm-3 col-xs-12">
+                                    病情备注
+                                </label>
+                                <div class="col-md-6 col-sm-6 col-xs-12">
+                                    <textarea name="remark" class="form-control" rows="2" placeholder="可选：填写主要症状..."></textarea>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <div class="text-end">
-                        <a href="{% url 'hospital:index' %}" class="btn btn-light">取消</a>
-                        <button type="submit" class="btn btn-success px-5" id="submit-btn">提交任务</button>
+                            <div class="ln_solid"></div>
+
+                            <div class="row" style="margin-top: 20px;">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label class="control-label col-md-3 col-sm-3 col-xs-12" style="padding-top: 50px;">
+                                            原始视频 <span style="color:red">*</span>
+                                        </label>
+                                        <div class="col-md-6 col-sm-6 col-xs-12">
+                                            <div id="wrap-video" style="position: relative; height: 160px; background-color: #f0fdf4; border: 2px dashed #1ABB9C; border-radius: 6px; text-align: center; cursor: pointer; transition: 0.3s;">
+                                                
+                                                <input type="file" name="video_file" required accept=".mp4,.avi,.mov" 
+                                                       onchange="previewFile(this, 'video-text')"
+                                                       style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;">
+                                                
+                                                <div style="padding-top: 40px;">
+                                                    <i class="fa fa-video-camera" style="font-size: 40px; color: #1ABB9C; margin-bottom: 10px;"></i>
+                                                    <div id="video-text" style="font-size: 16px; font-weight: bold; color: #555;">点击上传视频 (自动抽帧)</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="control-label col-md-3 col-sm-3 col-xs-12" style="padding-top: 30px;">
+                                            病例附件
+                                        </label>
+                                        <div class="col-md-6 col-sm-6 col-xs-12">
+                                            <div id="wrap-patient" style="position: relative; height: 100px; background-color: #fafafa; border: 2px dashed #ccc; border-radius: 6px; text-align: center; cursor: pointer;">
+                                                
+                                                <input type="file" name="patient_file" accept=".pdf,.doc,.docx,.jpg" 
+                                                       onchange="previewFile(this, 'patient-text')"
+                                                       style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;">
+                                                
+                                                <div style="padding-top: 25px;">
+                                                    <i class="fa fa-file-text-o" style="font-size: 24px; color: #73879C; margin-right: 10px;"></i>
+                                                    <span id="patient-text" style="font-size: 14px; color: #73879C;">点击上传病例资料 (可选)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ln_solid"></div>
+
+                            <div class="form-group">
+                                <div class="col-md-12 text-center" style="margin-top: 20px;">
+                                    <a href="{% url 'hospital:index' %}" class="btn btn-default" style="margin-right: 20px;">取消</a>
+                                    <button type="submit" class="btn btn-success btn-lg" id="submit-btn" style="width: 200px;">
+                                        <i class="fa fa-cloud-upload"></i> 提交任务
+                                    </button>
+                                </div>
+                            </div>
+
+                        </form>
                     </div>
-                </form>
-                
-                <!-- 简单的加载提示 -->
-                <div id="loading" style="display:none; text-align:center; margin-top:20px;">
-                    <p class="text-success"><i class="fa fa-spinner fa-spin"></i> 正在加密并处理视频，请稍候...</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block js %}
 <script>
-function showFile(input) {
-    if(input.files && input.files[0]) {
-        let name = input.files[0].name;
-        let wrapper = input.parentElement;
-        wrapper.querySelector('span').style.display = 'none';
-        wrapper.querySelector('.file-name').textContent = name;
-        wrapper.querySelector('.file-name').style.display = 'block';
-        wrapper.style.borderColor = '#27ae60';
-        wrapper.style.background = '#f0fff4';
+    function previewFile(input, textId) {
+        var textEl = document.getElementById(textId);
+        if (input.files && input.files[0]) {
+            textEl.innerHTML = '<span style="color: #1ABB9C; font-weight: bold;"><i class="fa fa-check"></i> 已选中: ' + input.files[0].name + '</span>';
+            // 如果是视频框，加深一点背景色
+            if(textId === 'video-text') {
+                document.getElementById('wrap-video').style.backgroundColor = "#e6fffa";
+            }
+        } else {
+            // 恢复默认
+            if(textId === 'video-text') {
+                textEl.innerText = "点击上传视频 (自动抽帧)";
+                document.getElementById('wrap-video').style.backgroundColor = "#f0fdf4";
+            } else {
+                textEl.innerText = "点击上传病例资料 (可选)";
+            }
+        }
     }
-}
-document.getElementById('upload-form').onsubmit = function() {
-    document.getElementById('submit-btn').disabled = true;
-    document.getElementById('loading').style.display = 'block';
-}
+
+    // 提交时的 Loading
+    document.getElementById('add-task-form').onsubmit = function() {
+        var btn = document.getElementById('submit-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 正在上传处理...';
+    };
 </script>
 {% endblock %}

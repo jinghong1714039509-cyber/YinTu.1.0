@@ -8,20 +8,19 @@
     <title>{% block title %}医疗数据平台{% endblock %}</title>
     
     <link href="/static/vendors/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
-    
     <link href="/static/vendors/font-awesome/css/font-awesome.min.css" rel="stylesheet">
     <link href="/static/vendors/nprogress/nprogress.css" rel="stylesheet">
     <link href="/static/build/css/custom.min.css" rel="stylesheet">
     
     <style>
         /* =========================================
-           1. 布局核心修复 (解决高度与背景断层)
+           1. 布局核心修复
            ========================================= */
         .nav-md .container.body .col-md-3.left_col {
             min-height: 100%;
         }
         
-        /* 让右侧内容区撑满屏幕，并使用柔和的灰色背景 */
+        /* 右侧内容区撑满屏幕，背景色 #F7F7F7 */
         .right_col {
             min-height: 100vh !important;
             background-color: #F7F7F7 !important;
@@ -32,7 +31,7 @@
         }
 
         /* =========================================
-           2. 下拉菜单终极修复 (解决点击不显示/位置错乱)
+           2. 下拉菜单修复
            ========================================= */
         .top_nav .nav_menu { overflow: visible !important; }
         .navbar-nav > li { position: relative !important; }
@@ -50,7 +49,6 @@
             display: none; 
         }
         
-        /* 关键：当 JS 添加 open 类时，强制显示菜单 */
         .navbar-nav > li.open .dropdown-menu { display: block !important; }
     
         .user-profile {
@@ -60,7 +58,7 @@
         }
         
         /* =========================================
-           3. 界面美化 (卡片圆角与阴影)
+           3. 界面美化
            ========================================= */
         .x_panel {
             border: none !important;
@@ -77,7 +75,6 @@
             margin-bottom: 20px;
         }
 
-        /* 底部 Footer 美化 */
         footer {
             background: #F7F7F7 !important;
             color: #999;
@@ -105,6 +102,7 @@
                         <div class="menu_section">
                             <h3>🛡️ 超级管理员</h3>
                             <ul class="nav side-menu">
+                                <li><a href="{% url 'users:admin_dashboard' %}"><i class="fa fa-dashboard"></i> 数据全景驾驶舱</a></li>
                                 <li><a href="{% url 'users:manage_list' %}"><i class="fa fa-users"></i> 账号与权限管理</a></li>
                                 <li><a href="{% url 'users:log_list' %}"><i class="fa fa-history"></i> 操作日志</a></li>
                             </ul>
@@ -113,7 +111,7 @@
 
                         {% if user.role == 'hospital' or user.is_superuser %}
                         <div class="menu_section">
-                            <h3> 医院</h3>
+                            <h3>🏥 医院</h3>
                             <ul class="nav side-menu">
                                 <li><a href="{% url 'hospital:add' %}"><i class="fa fa-plus-circle"></i> 新建病例任务</a></li>
                                 <li><a href="{% url 'hospital:index' %}"><i class="fa fa-list-ul"></i> 任务状态列表</a></li>
@@ -123,7 +121,7 @@
 
                         {% if user.role == 'labeler' or user.is_superuser %}
                         <div class="menu_section">
-                            <h3> 标注</h3>
+                            <h3>🏷️ 标注</h3>
                             <ul class="nav side-menu">
                                 <li><a href="{% url 'labeler:dashboard' %}"><i class="fa fa-folder-open"></i> 任务领取大厅</a></li>
                             </ul>
@@ -149,7 +147,7 @@
                         <ul class="nav navbar-nav navbar-right">
                             <li class="">
                                 <a href="javascript:;" class="user-profile dropdown-toggle" aria-expanded="false">
-                                    <img src="/static/images/user.png" alt="">
+                                    <img src="{% if user.avatar %}/media/{{ user.avatar }}{% else %}/static/images/user.png{% endif %}" alt="">
                                     {% if user.is_authenticated %}
                                         {{ user.username }}
                                         {% if user.is_superuser %}<small class="text-danger">(Admin)</small>{% endif %}

@@ -1,14 +1,29 @@
+import json
+import datetime
+# 1. 引入系统监控库 (防止报错)
+try:
+    import psutil
+    HAS_PSUTIL = True
+except ImportError:
+    HAS_PSUTIL = False
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import update_session_auth_hash
-# ✅ 新增：分页和复杂查询工具
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.db.models.functions import TruncDate
+from django.utils import timezone
 
-# ✅ 新增：引入日志模型
+# ✅✅✅ 关键修正：确保这里导入了 SampleImage 和所有状态常量
+from apps.core.models import (
+    LabelTask, SampleImage, 
+    STATUS_PROCESSING, STATUS_DONE, STATUS_REVIEWING, STATUS_REJECTED, STATUS_ERROR
+)
+
 from .models import OperationLog
 
 # 尝试引入自定义表单
@@ -44,12 +59,12 @@ def login_view(request):
             login(request, user)
             
             # 登录成功后，根据角色智能跳转
-            if getattr(user, 'role', '') == 'labeler':
+            if user.is_superuser:
+                return redirect('users:admin_dashboard') 
+            elif getattr(user, 'role', '') == 'labeler':
                 return redirect('labeler:dashboard')
             elif getattr(user, 'role', '') == 'hospital':
                 return redirect('hospital:index')
-            elif user.is_superuser:
-                return redirect('users:manage_list') 
             else:
                 return redirect('/')
     else:
@@ -83,8 +98,8 @@ def change_password_view(request):
             update_session_auth_hash(request, user) 
             messages.success(request, "密码修改成功！")
             
-            if user.is_superuser: return redirect('users:manage_list')
-            if user.role == 'labeler': return redirect('labeler:dashboard')
+            if user.is_superuser: return redirect('users:admin_dashboard')
+            if getattr(user, 'role', '') == 'labeler': return redirect('labeler:dashboard')
             return redirect('hospital:index')
         else:
             messages.error(request, "请修正下面的错误")
@@ -106,23 +121,53 @@ def is_superuser(user):
 @login_required
 @user_passes_test(is_superuser)
 def user_manage_list(request):
-    """用户管理列表"""
-    users = User.objects.all().order_by('-date_joined')
-    return render(request, 'users/manage_list.html', {'users': users})
+    """
+    用户管理列表 (带服务端分页与搜索)
+    解决卡顿的核心：只查当前页数据
+    """
+    search_query = request.GET.get('q', '')
+    page_number = request.GET.get('page', 1)
+    
+    # 1. 基础查询
+    users_qs = User.objects.all().order_by('-date_joined')
+    
+    # 2. 搜索过滤
+    if search_query:
+        users_qs = users_qs.filter(
+            Q(username__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(phone__icontains=search_query)
+        )
+    
+    # 3. 分页处理 (每页 15 条)
+    paginator = Paginator(users_qs, 15)
+    
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+        
+    context = {
+        'page_obj': page_obj,          
+        'search_query': search_query, 
+        'total_count': users_qs.count() 
+    }
+    return render(request, 'users/manage_list.html', context)
 
 @login_required
 @user_passes_test(is_superuser)
 def user_delete(request, user_id):
     """删除用户"""
     target_user = get_object_or_404(User, id=user_id)
-    target_name = target_user.username  # 记录名字
+    target_name = target_user.username 
     
     if target_user.is_superuser:
         messages.error(request, "不能删除超级管理员！")
     else:
         target_user.delete()
         
-        # ✅ 记录日志
         OperationLog.objects.create(
             operator=request.user,
             action="删除用户",
@@ -142,7 +187,6 @@ def user_reset_password(request, user_id):
     target_user.set_password("123456")
     target_user.save()
     
-    # ✅ 记录日志
     OperationLog.objects.create(
         operator=request.user,
         action="重置密码",
@@ -158,15 +202,13 @@ def user_reset_password(request, user_id):
 @user_passes_test(is_superuser)
 def operation_log_list(request):
     """
-    ✅ [新增] 操作日志审计页面 (带服务端分页与搜索)
+    操作日志审计页面 (带服务端分页与搜索)
     """
     search_query = request.GET.get('q', '')
     page_number = request.GET.get('page', 1)
     
-    # 1. 基础查询 (优化查询性能)
     logs_qs = OperationLog.objects.select_related('operator').all().order_by('-create_time')
     
-    # 2. 搜索过滤
     if search_query:
         logs_qs = logs_qs.filter(
             Q(operator__username__icontains=search_query) |
@@ -175,7 +217,6 @@ def operation_log_list(request):
             Q(ip_address__icontains=search_query)
         )
     
-    # 3. 分页处理 (每页 20 条)
     paginator = Paginator(logs_qs, 20)
     
     try:
@@ -186,7 +227,116 @@ def operation_log_list(request):
         page_obj = paginator.page(paginator.num_pages)
         
     context = {
-        'page_obj': page_obj,      # 当前页对象
-        'search_query': search_query, # 回填搜索框
+        'page_obj': page_obj,      
+        'search_query': search_query, 
     }
     return render(request, 'users/log_list.html', context)
+
+@login_required
+@user_passes_test(is_superuser)
+def admin_dashboard(request):
+    """
+    [超级管理员] 全景数据驾驶舱
+    """
+    # 1. 服务器状态
+    if HAS_PSUTIL:
+        try:
+            cpu_usage = psutil.cpu_percent(interval=None)
+            memory = psutil.virtual_memory()
+            disk = psutil.disk_usage('/')
+            server_stats = {
+                'cpu': cpu_usage,
+                'memory': int(memory.percent),
+                'disk': int(disk.percent),
+                'disk_used_gb': round(disk.used / (1024**3), 1),
+                'disk_total_gb': round(disk.total / (1024**3), 1),
+            }
+        except Exception:
+            server_stats = {'cpu': 0, 'memory': 0, 'disk': 0, 'disk_used_gb': 0, 'disk_total_gb': 0}
+    else:
+        server_stats = {'cpu': 0, 'memory': 0, 'disk': 0, 'disk_used_gb': 0, 'disk_total_gb': 0}
+
+    # 2. 在线人数
+    time_threshold = timezone.now() - datetime.timedelta(minutes=30)
+    active_users = User.objects.filter(last_login__gte=time_threshold)
+    
+    online_stats = {
+        'total': active_users.count(),
+        'doctors': active_users.filter(role='hospital').count(),
+        'labelers': active_users.filter(role='labeler').count(),
+        'admins': active_users.filter(is_superuser=True).count()
+    }
+
+    # 3. 任务状态分布
+    task_counts = LabelTask.objects.aggregate(
+        processing=Count('id', filter=Q(state=STATUS_PROCESSING)),
+        done=Count('id', filter=Q(state=STATUS_DONE)),
+        reviewing=Count('id', filter=Q(state=STATUS_REVIEWING)),
+        rejected=Count('id', filter=Q(state=STATUS_REJECTED)),
+        error=Count('id', filter=Q(state=STATUS_ERROR))
+    )
+    
+    pie_data = [
+        {'value': task_counts['processing'] or 0, 'name': '处理中'},
+        {'value': task_counts['done'] or 0, 'name': '已完成'},
+        {'value': task_counts['reviewing'] or 0, 'name': '待审核'},
+        {'value': task_counts['rejected'] or 0, 'name': '被驳回'},
+        {'value': task_counts['error'] or 0, 'name': '异常'},
+    ]
+
+    # 4. 趋势图
+    today = timezone.now().date()
+    seven_days_ago = today - datetime.timedelta(days=6)
+    
+    daily_tasks = LabelTask.objects.filter(created_at__date__gte=seven_days_ago)\
+        .annotate(date=TruncDate('created_at'))\
+        .values('date')\
+        .annotate(count=Count('id'))\
+        .order_by('date')
+        
+    date_map = { (seven_days_ago + datetime.timedelta(days=i)): 0 for i in range(7) }
+    for item in daily_tasks:
+        if item['date'] in date_map:
+            date_map[item['date']] = item['count']
+            
+    trend_labels = [d.strftime('%m-%d') for d in sorted(date_map.keys())]
+    trend_data = [date_map[d] for d in sorted(date_map.keys())]
+
+    # 5. 标注员真实排行榜
+    # ✅ 这里使用了 SampleImage，所以必须在文件头部导入它！
+    labeler_stats = SampleImage.objects.filter(is_labeled=True)\
+        .exclude(labeled_by__isnull=True)\
+        .exclude(labeled_by='')\
+        .values('labeled_by')\
+        .annotate(total_count=Count('id'))\
+        .order_by('-total_count')[:5]
+
+    top_labelers = []
+    for stat in labeler_stats:
+        username = stat['labeled_by']
+        user_obj = User.objects.filter(username=username).first()
+        role_display = '标注员'
+        if user_obj:
+            if user_obj.is_superuser:
+                role_display = '管理员'
+            else:
+                role_display = dict(User.ROLE_CHOICES).get(user_obj.role, '标注员')
+
+        top_labelers.append({
+            'name': username,
+            'role': role_display,
+            'count': stat['total_count'],
+            'accuracy': 100 
+        })
+
+    context = {
+        'server_stats': json.dumps(server_stats),
+        'online_stats': json.dumps(online_stats),
+        'pie_data': json.dumps(pie_data),
+        'trend_labels': json.dumps(trend_labels),
+        'trend_data': json.dumps(trend_data),
+        'top_labelers': json.dumps(top_labelers),
+        'currentTime': timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+    }
+    
+    return render(request, 'users/admin_dashboard.html', context)

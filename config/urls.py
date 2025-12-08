@@ -18,17 +18,19 @@ def home_redirect(request):
     user_role = getattr(request.user, 'role', None)
 
     # 3. 根据角色分流
+    
+    # ✅ [修改点] 超级管理员 -> 跳转到新做的仪表盘
+    if request.user.is_superuser:
+        return redirect('users:admin_dashboard')
+
     if user_role == 'labeler':
         # 标注员 -> B端工作台 (我们刚做好的卡片页)
         return redirect('labeler:dashboard')
     elif user_role == 'hospital':
         # 医生 -> A端任务列表
         return redirect('hospital:index')
-    
-    # 4. 管理员或其他未知角色 -> 默认去医院端或 Admin
-    if request.user.is_superuser:
-        return redirect('/admin/')
         
+    # 其他情况默认去医院端
     return redirect('hospital:index')
 
 urlpatterns = [
