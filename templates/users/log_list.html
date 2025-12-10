@@ -1,5 +1,5 @@
 {% extends "base_site.html" %}
-{% block title %}全站操作日志{% endblock %}
+{% block title %}操作日志{% endblock %}
 
 {% block css %}
     <script src="https://cdn.tailwindcss.com"></script>
@@ -7,10 +7,7 @@
         tailwind.config = { corePlugins: { preflight: false } }
     </script>
     <style>
-        /* 核心：隐藏未编译的 Vue 元素 */
         [v-cloak] { display: none !important; }
-        
-        /* 避免布局跳动：确保表格容器有最小高度 */
         .table-container { min-height: 200px; }
     </style>
 {% endblock %}
@@ -22,83 +19,86 @@
         <div class="min-h-screen p-6">
             
             <div class="max-w-7xl mx-auto space-y-6">
-                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2 m-0 border-0">
-                        <i data-lucide="history" class="w-8 h-8 text-indigo-600"></i>
-                        全站操作审计
-                    </h1>
-                    <div class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg text-sm font-medium border border-indigo-100">
-                        总记录数: {{ page_obj.paginator.count }}
-                    </div>
-                </div>
-
-                <div class="bg-white p-5 rounded-xl border shadow-sm">
-                    <form method="GET" action="." class="flex flex-col sm:flex-row gap-3 m-0">
-                        <div class="relative flex-1">
-                            <i data-lucide="search" class="absolute left-3 top-3 h-5 w-5 text-gray-400"></i>
-                            <input type="text" name="q" value="{{ search_query }}" placeholder="输入用户名、动作、操作对象或IP..." class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 focus:bg-white transition text-sm">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mt-10">
+                    <form method="GET" action="." class="flex gap-4 m-0">
+                        <div class="relative flex-grow">
+                            <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                            <input type="text" name="q" value="{{ search_query }}" 
+                                   class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" 
+                                   placeholder="搜索操作人、动作类型、目标对象或IP地址...">
                         </div>
-                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 border-0">
-                            <i data-lucide="search" class="w-4 h-4"></i> 搜索
+                        <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition flex items-center gap-2 border-0">
+                            <i data-lucide="filter" class="w-4 h-4"></i> 筛选
                         </button>
-                        {% if search_query %}
-                        <a href="{% url 'users:log_list' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center no-underline">重置</a>
-                        {% endif %}
                     </form>
                 </div>
 
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden table-container">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden table-container">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
-                            <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
-                                <tr>
-                                    <th class="px-6 py-3 border-b">时间</th>
-                                    <th class="px-6 py-3 border-b">操作人</th>
-                                    <th class="px-6 py-3 border-b">动作</th>
-                                    <th class="px-6 py-3 border-b">目标对象 & 详情</th>
-                                    <th class="px-6 py-3 border-b">来源 IP</th>
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200">
+                                    <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">时间 / IP</th>
+                                    <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">操作人</th>
+                                    <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">动作</th>
+                                    <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">目标</th>
+                                    <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">详情</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100 text-sm">
-                                <tr v-for="log in logs" :key="log.id" class="hover:bg-indigo-50/30 transition duration-150 group">
-                                    <td class="px-6 py-3 text-gray-500 font-mono text-xs whitespace-nowrap">[[ log.time ]]</td>
-                                    <td class="px-6 py-3">
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="log in logs" :key="log.id" class="hover:bg-slate-50/80 transition">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-slate-900">[[ log.time.split(' ')[0] ]]</div>
+                                        <div class="text-xs text-slate-500">[[ log.time.split(' ')[1] ]] <span class="mx-1">·</span> [[ log.ip ]]</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center gap-2">
-                                            <div class="w-8 h-8 rounded-full bg-gray-100 border flex items-center justify-center text-xs font-bold text-gray-600">[[ log.operator ? log.operator.charAt(0).toUpperCase() : '?' ]]</div>
-                                            <span class="font-medium text-slate-700">[[ log.operator ]]</span>
+                                            <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
+                                                [[ log.operator.charAt(0).toUpperCase() ]]
+                                            </div>
+                                            <span class="text-sm font-medium text-slate-700">[[ log.operator ]]</span>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-3">
-                                        <span :class="getActionBadge(log.action)" class="px-2 py-0.5 rounded-md text-xs font-medium border inline-block">[[ log.action ]]</span>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span :class="['px-2.5 py-1 rounded-full text-xs font-medium border', getActionBadge(log.action)]">
+                                            [[ log.action ]]
+                                        </span>
                                     </td>
-                                    <td class="px-6 py-3">
-                                        <div class="flex flex-col">
-                                            <span class="font-medium text-slate-800">[[ log.target ]]</span>
-                                            <span class="text-xs text-gray-400 truncate max-w-xs" :title="log.details">[[ log.details ]]</span>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-slate-700 font-mono bg-slate-50 px-2 py-1 rounded border border-slate-100 inline-block">
+                                            [[ log.target || '-' ]]
                                         </div>
                                     </td>
-                                    <td class="px-6 py-3 text-gray-400 text-xs font-mono">[[ log.ip ]]</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600 max-w-xs truncate" :title="log.details">
+                                        [[ log.details ]]
+                                    </td>
                                 </tr>
                                 <tr v-if="logs.length === 0">
-                                    <td colspan="5" class="px-6 py-10 text-center text-gray-400">暂无数据</td>
+                                    <td colspan="5" class="px-6 py-12 text-center text-slate-400">
+                                        <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+                                        <p>暂无相关日志记录</p>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    
+
                     {% if page_obj.has_other_pages %}
-                    <div class="bg-gray-50 px-6 py-4 border-t flex items-center justify-between">
-                        <div class="text-xs text-gray-500">第 {{ page_obj.number }} 页 / 共 {{ page_obj.paginator.num_pages }} 页</div>
+                    <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+                        <span class="text-sm text-slate-500">
+                            页码 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                        </span>
                         <div class="flex gap-2">
                             {% if page_obj.has_previous %}
-                                <a href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}" class="px-3 py-1.5 bg-white border border-gray-300 rounded hover:bg-indigo-50 text-sm transition no-underline text-gray-600">上一页</a>
+                                <a href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}" class="px-3 py-1.5 bg-white border border-slate-300 rounded text-sm text-slate-600 hover:bg-slate-50 transition no-underline">上一页</a>
                             {% else %}
-                                <span class="px-3 py-1.5 bg-gray-100 border border-gray-200 rounded text-gray-400 text-sm cursor-not-allowed">上一页</span>
+                                <button disabled class="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded text-sm text-slate-400 cursor-not-allowed">上一页</button>
                             {% endif %}
+
                             {% if page_obj.has_next %}
-                                <a href="?page={{ page_obj.next_page_number }}&q={{ search_query }}" class="px-3 py-1.5 bg-white border border-gray-300 rounded hover:bg-indigo-50 text-sm transition no-underline text-gray-600">下一页</a>
+                                <a href="?page={{ page_obj.next_page_number }}&q={{ search_query }}" class="px-3 py-1.5 bg-white border border-slate-300 rounded text-sm text-slate-600 hover:bg-slate-50 transition no-underline">下一页</a>
                             {% else %}
-                                <span class="px-3 py-1.5 bg-gray-100 border border-gray-200 rounded text-gray-400 text-sm cursor-not-allowed">下一页</span>
+                                <button disabled class="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded text-sm text-slate-400 cursor-not-allowed">下一页</button>
                             {% endif %}
                         </div>
                     </div>
@@ -116,6 +116,7 @@
 
     <script>
         const { createApp, ref, onMounted } = Vue;
+
         createApp({
             delimiters: ['[[', ']]'],
             setup() {
@@ -132,19 +133,21 @@
                     },
                     {% endfor %}
                 ]);
+
                 const getActionBadge = (action) => {
                     if (action.includes('删除')) return 'bg-red-50 text-red-600 border-red-100';
                     if (action.includes('新建') || action.includes('上传')) return 'bg-blue-50 text-blue-600 border-blue-100';
                     if (action.includes('下载')) return 'bg-purple-50 text-purple-600 border-purple-100';
                     if (action.includes('保存') || action.includes('修改')) return 'bg-green-50 text-green-600 border-green-100';
-                    if (action.includes('登录') || action.includes('注销')) return 'bg-slate-100 text-slate-600 border-slate-200';
                     return 'bg-gray-50 text-gray-600 border-gray-200';
                 };
+
                 onMounted(() => { 
                     setTimeout(() => {
                         if (window.lucide) window.lucide.createIcons();
                     }, 50);
                 });
+
                 return { logs, getActionBadge };
             }
         }).mount('#log-app');

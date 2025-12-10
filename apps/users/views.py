@@ -18,7 +18,7 @@ from django.db.models import Q, Count
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
-# ✅✅✅ 关键修正：确保这里导入了 SampleImage 和所有状态常量
+# 引入核心模型
 from apps.core.models import (
     LabelTask, SampleImage, 
     STATUS_PROCESSING, STATUS_DONE, STATUS_REVIEWING, STATUS_REJECTED, STATUS_ERROR
@@ -123,7 +123,7 @@ def is_superuser(user):
 def user_manage_list(request):
     """
     用户管理列表 (带服务端分页与搜索)
-    解决卡顿的核心：只查当前页数据
+    ✅ [修改] 增加了账号统计数据的计算
     """
     search_query = request.GET.get('q', '')
     page_number = request.GET.get('page', 1)
@@ -148,11 +148,29 @@ def user_manage_list(request):
         page_obj = paginator.page(1)
     except EmptyPage:
         page_obj = paginator.page(paginator.num_pages)
+
+    # 4. ✅ [新增] 统计数据逻辑
+    # 统计各角色人数，用于前端展示
+    total_users = User.objects.count()
+    admin_count = User.objects.filter(is_superuser=True).count()
+    # 假设 role 字段存在 ('hospital' 为医生, 'labeler' 为标注员)
+    doctor_count = User.objects.filter(role='hospital').count()
+    labeler_count = User.objects.filter(role='labeler').count()
+    
+    stats = {
+        'total': total_users,
+        'admins': admin_count,
+        'doctors': doctor_count,
+        'labelers': labeler_count,
+        # 这里的 'others' 是未分配角色的用户
+        'others': total_users - (admin_count + doctor_count + labeler_count)
+    }
         
     context = {
         'page_obj': page_obj,          
         'search_query': search_query, 
-        'total_count': users_qs.count() 
+        'total_count': users_qs.count(),
+        'stats': stats  # ✅ 将统计数据传递给模板
     }
     return render(request, 'users/manage_list.html', context)
 
@@ -303,7 +321,6 @@ def admin_dashboard(request):
     trend_data = [date_map[d] for d in sorted(date_map.keys())]
 
     # 5. 标注员真实排行榜
-    # ✅ 这里使用了 SampleImage，所以必须在文件头部导入它！
     labeler_stats = SampleImage.objects.filter(is_labeled=True)\
         .exclude(labeled_by__isnull=True)\
         .exclude(labeled_by='')\

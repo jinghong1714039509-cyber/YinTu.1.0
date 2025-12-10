@@ -5,13 +5,14 @@ from django.shortcuts import render, redirect
 from django.conf import settings
 from django.contrib import messages
 from django.db import connection
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger  # ✅ 引入分页器
+
 # 引入装饰器
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 from apps.core.decorators import hospital_required 
 
 from apps.core.models import LabelTask, SampleImage, STATUS_READY, STATUS_ERROR
-# ✅ 修改：引入 log_operation
 from apps.core.utils import gen_random_code, encrypt_file, log_operation
 
 @never_cache
@@ -61,15 +62,14 @@ def add_task(request):
             task.source_video_path = os.path.join('secure_data', task.code, f'source{video_ext}')
             task.save()
 
-            # 3. ✅ 关键修改：启动异步线程执行抽帧
+            # 3. 启动异步线程执行抽帧
             public_images_dir = os.path.join(settings.MEDIA_ROOT, 'upload', 'images', task.code)
             if not os.path.exists(public_images_dir):
                 os.makedirs(public_images_dir)
             
-            # 使用 Thread 开启后台任务
             thread = threading.Thread(
-                target=process_video_thread,  # 指向下面的新函数
-                args=(task.id, video_path, public_images_dir, 1) # 传 ID 而不是对象，防止线程冲突
+                target=process_video_thread,
+                args=(task.id, video_path, public_images_dir, 1)
             )
             thread.start()
 
@@ -91,16 +91,12 @@ def add_task(request):
 
 def process_video_thread(task_id, video_abs_path, output_dir, extract_fps=1):
     """
-    ✅ 新增：线程安全的视频处理函数
+    线程安全的视频处理函数
     """
-    # 在线程开始时，重新获取 task 对象，避免数据库连接问题
     try:
-        # 显式关闭旧连接，强制线程建立新连接
         connection.close() 
         task = LabelTask.objects.get(id=task_id)
-        
         process_video_logic(task, video_abs_path, output_dir, extract_fps)
-        
     except Exception as e:
         print(f"线程异常: {e}")
     finally:
@@ -108,7 +104,7 @@ def process_video_thread(task_id, video_abs_path, output_dir, extract_fps=1):
 
 def process_video_logic(task, video_abs_path, output_dir, extract_fps=1):
     """
-    原有的处理逻辑，移动到这里
+    原有的处理逻辑
     """
     try:
         cap = cv2.VideoCapture(video_abs_path)
@@ -132,8 +128,6 @@ def process_video_logic(task, video_abs_path, output_dir, extract_fps=1):
             if frame_count % extract_interval == 0:
                 file_name = f"img_{saved_count:05d}.jpg"
                 save_path = os.path.join(output_dir, file_name)
-                
-                # 压缩图片质量，进一步减少卡顿和存储
                 cv2.imwrite(save_path, frame, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
 
                 SampleImage.objects.create(
@@ -160,10 +154,28 @@ def process_video_logic(task, video_abs_path, output_dir, extract_fps=1):
 @never_cache
 @hospital_required
 def index(request):
-    """A端列表"""
-    # 还可以加一步：只显示当前用户创建的任务 (可选)
-    # if not request.user.is_superuser:
-    #     tasks = LabelTask.objects.filter(creator_id=request.user.id).order_by('-id')
-    # else:
-    tasks = LabelTask.objects.all().order_by('-id')
+    """
+    A端任务列表 - ✅ [已升级] 支持分页和进度计算
+    """
+    # 1. 获取所有任务（倒序）
+    task_list = LabelTask.objects.all().order_by('-id')
+    
+    # 2. 计算每个任务的进度（为了在卡片上显示进度条）
+    for task in task_list:
+        if task.sample_count > 0:
+            task.progress = int((task.labeled_count / task.sample_count) * 100)
+        else:
+            task.progress = 0
+
+    # 3. 分页处理：每页 12 个任务
+    paginator = Paginator(task_list, 12)
+    page = request.GET.get('page')
+    
+    try:
+        tasks = paginator.page(page)
+    except PageNotAnInteger:
+        tasks = paginator.page(1)
+    except EmptyPage:
+        tasks = paginator.page(paginator.num_pages)
+
     return render(request, 'hospital/task_list.html', {'tasks': tasks})

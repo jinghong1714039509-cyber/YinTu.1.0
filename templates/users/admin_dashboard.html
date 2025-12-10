@@ -1,20 +1,10 @@
 {% extends "base_site.html" %}
-{% block title %}Yintu{% endblock %}
+{% block title %}系统概览{% endblock %}
 
 {% block css %}
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            corePlugins: { preflight: false }, // 禁用重置，保护 Bootstrap
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#3b82f6',
-                        success: '#22c55e',
-                    }
-                }
-            }
-        }
+        tailwind.config = { corePlugins: { preflight: false } }
     </script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
@@ -22,143 +12,113 @@
 
     <style>
         [v-cloak] { display: none !important; }
-        .pulse-dot { animation: pulse-green 2s infinite; }
-        @keyframes pulse-green {
-            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-            70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-        }
-        /* 修复图表容器高度 */
-        .chart-box { height: 320px; width: 100%; position: relative; }
     </style>
 {% endblock %}
 
 {% block content %}
 <div class="right_col" role="main" style="min-height: 100vh;">
-    <div id="dashboard-app" v-cloak>
-        <div class="min-h-screen p-6">
+    <div id="dashboard-app" v-cloak class="min-h-screen p-6">
+        <div class="max-w-7xl mx-auto space-y-6">
             
-            <div class="flex justify-between items-center mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 invisible select-none">
                 <div>
-                    <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2 m-0 border-0">
-                        <i data-lucide="layout-dashboard" class="w-7 h-7 text-blue-600"></i>
-                        超级管理员驾驶舱
-                        <span class="text-xs font-normal text-white bg-blue-600 px-2 py-0.5 rounded-full ml-2">LIVE</span>
+                    <h1 class="text-2xl font-bold flex items-center gap-2 m-0 border-0">
+                        <span class="w-6 h-6"></span>
+                        Placeholder
                     </h1>
                 </div>
-                <div class="flex items-center gap-4 text-sm text-slate-500">
-                    <span>数据更新: [[ currentTime ]]</span>
-                    <button @click="refreshData" class="p-2 hover:bg-white rounded-full transition shadow-sm border border-transparent hover:border-slate-200 text-blue-600">
-                        <i data-lucide="refresh-cw" :class="{'animate-spin': loading}" class="w-4 h-4"></i>
-                    </button>
-                </div>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 relative overflow-hidden">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <div class="text-slate-500 text-xs font-bold uppercase tracking-wider">实时在线</div>
-                            <div class="text-3xl font-bold text-slate-800 mt-1">[[ online.total ]]</div>
-                        </div>
-                        <div class="bg-green-50 p-2 rounded-lg text-green-600">
-                            <i data-lucide="users" class="w-5 h-5"></i>
-                        </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase">服务器 CPU</p>
+                        <p class="text-2xl font-bold text-slate-800 mt-1">[[ server.cpu ]]%</p>
                     </div>
-                    <div class="flex items-center gap-2 text-xs text-slate-400">
-                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span> 医生: [[ online.doctors ]]</span>
-                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-500"></span> 标注员: [[ online.labelers ]]</span>
+                    <div class="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                        <i data-lucide="cpu" class="w-6 h-6"></i>
                     </div>
                 </div>
-
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="text-slate-500 text-xs font-bold uppercase tracking-wider">CPU 负载</div>
-                        <i data-lucide="cpu" class="w-5 h-5 text-purple-500"></i>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase">内存使用</p>
+                        <p class="text-2xl font-bold text-slate-800 mt-1">[[ server.memory ]]%</p>
                     </div>
-                    <div class="flex items-end gap-2 mb-2">
-                        <span class="text-3xl font-bold text-slate-800">[[ server.cpu ]]%</span>
-                    </div>
-                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                        <div class="h-full transition-all duration-1000" :class="server.cpu > 80 ? 'bg-red-500' : 'bg-purple-500'" :style="{ width: server.cpu + '%' }"></div>
+                    <div class="p-3 bg-purple-50 text-purple-600 rounded-lg">
+                        <i data-lucide="activity" class="w-6 h-6"></i>
                     </div>
                 </div>
-
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="text-slate-500 text-xs font-bold uppercase tracking-wider">内存使用</div>
-                        <i data-lucide="hard-drive" class="w-5 h-5 text-orange-500"></i>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase">磁盘空间</p>
+                        <p class="text-2xl font-bold text-slate-800 mt-1">[[ server.disk ]]%</p>
+                        <p class="text-[10px] text-slate-400">[[ server.disk_used_gb ]]G / [[ server.disk_total_gb ]]G</p>
                     </div>
-                    <div class="flex items-end gap-2 mb-2">
-                        <span class="text-3xl font-bold text-slate-800">[[ server.memory ]]%</span>
-                    </div>
-                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                        <div class="h-full bg-orange-500 rounded-full transition-all duration-1000" :style="{ width: server.memory + '%' }"></div>
+                    <div class="p-3 bg-orange-50 text-orange-600 rounded-lg">
+                        <i data-lucide="hard-drive" class="w-6 h-6"></i>
                     </div>
                 </div>
-
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="text-slate-500 text-xs font-bold uppercase tracking-wider">磁盘空间</div>
-                        <i data-lucide="database" class="w-5 h-5 text-cyan-500"></i>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase">当前在线</p>
+                        <p class="text-2xl font-bold text-green-600 mt-1">[[ online.total ]]</p>
+                        <p class="text-[10px] text-slate-400">医生: [[ online.doctors ]] | 标注: [[ online.labelers ]]</p>
                     </div>
-                    <div class="flex items-end gap-2 mb-2">
-                        <span class="text-3xl font-bold text-slate-800">[[ server.disk ]]%</span>
-                        <span class="text-xs text-slate-400 mb-1">[[ server.disk_used_gb ]] / [[ server.disk_total_gb ]] GB</span>
-                    </div>
-                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                        <div class="h-full bg-cyan-500 rounded-full transition-all duration-1000" :style="{ width: server.disk + '%' }"></div>
+                    <div class="p-3 bg-green-50 text-green-600 rounded-lg">
+                        <i data-lucide="users" class="w-6 h-6"></i>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                
-                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="font-bold text-slate-800 flex items-center gap-2 m-0">
-                            <i data-lucide="activity" class="w-5 h-5 text-blue-600"></i>
-                            近7日任务增长趋势
-                        </h3>
-                    </div>
-                    <div id="trendChart" class="chart-box"></div>
-                </div>
-
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="font-bold text-slate-800 flex items-center gap-2 m-0">
-                            <i data-lucide="pie-chart" class="w-5 h-5 text-indigo-500"></i>
-                            当前任务状态分布
-                        </h3>
-                    </div>
-                    <div id="pieChart" class="chart-box"></div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 gap-6">
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2 m-0">
-                        <i data-lucide="trophy" class="w-5 h-5 text-yellow-500"></i>
-                        优秀标注员 (本周 Top 3)
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-500"></i> 近7日任务新增趋势
                     </h3>
-                    <div class="space-y-4 mt-4">
-                        <div v-for="(user, index) in topLabelers" :key="index" class="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition">
-                            <div class="flex items-center gap-4">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
-                                     :class="index === 0 ? 'bg-yellow-100 text-yellow-600' : (index === 1 ? 'bg-gray-100 text-gray-600' : 'bg-orange-50 text-orange-600')">
-                                    [[ index + 1 ]]
-                                </div>
-                                <div>
-                                    <div class="text-sm font-medium text-slate-800">[[ user.name ]]</div>
-                                    <div class="text-xs text-slate-400">[[ user.role ]]</div>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-sm font-bold text-blue-600">[[ user.count ]] 样本</div>
-                                <div class="text-xs text-green-500">准确率 [[ user.accuracy ]]%</div>
-                            </div>
-                        </div>
-                    </div>
+                    <div id="trendChart" style="height: 300px; width: 100%;"></div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-500"></i> 任务状态分布
+                    </h3>
+                    <div id="pieChart" style="height: 300px; width: 100%;"></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 m-0">
+                        <i data-lucide="award" class="w-4 h-4 text-yellow-500"></i> 标注员贡献榜 Top 5
+                    </h3>
+                    <span class="text-xs text-slate-400">实时更新</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 text-xs text-slate-500 uppercase font-semibold">
+                            <tr>
+                                <th class="px-6 py-3">排名</th>
+                                <th class="px-6 py-3">用户</th>
+                                <th class="px-6 py-3">角色</th>
+                                <th class="px-6 py-3 text-right">标注数量</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr v-for="(user, index) in topLabelers" :key="index" class="hover:bg-slate-50/50">
+                                <td class="px-6 py-3">
+                                    <span v-if="index === 0" class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 text-xs font-bold">1</span>
+                                    <span v-else-if="index === 1" class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs font-bold">2</span>
+                                    <span v-else-if="index === 2" class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-700 text-xs font-bold">3</span>
+                                    <span v-else class="text-slate-500 pl-2 text-sm">[[ index + 1 ]]</span>
+                                </td>
+                                <td class="px-6 py-3 font-medium text-slate-700">[[ user.name ]]</td>
+                                <td class="px-6 py-3 text-sm text-slate-500">[[ user.role ]]</td>
+                                <td class="px-6 py-3 text-right font-bold text-indigo-600">[[ user.count ]]</td>
+                            </tr>
+                            <tr v-if="topLabelers.length === 0">
+                                <td colspan="4" class="px-6 py-8 text-center text-slate-400 text-sm">暂无标注数据</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -174,67 +134,61 @@
         createApp({
             delimiters: ['[[', ']]'],
             setup() {
-                const loading = ref(false);
-                const currentTime = ref(new Date().toLocaleTimeString());
-                
-                // 接收 Django 传来的数据 (核心步骤)
-                const server = ref({{ server_stats|safe }});
-                const online = ref({{ online_stats|safe }});
-                const pieData = {{ pie_data|safe }};
-                const trendLabels = {{ trend_labels|safe }};
-                const trendData = {{ trend_data|safe }};
-                const topLabelers = ref({{ top_labelers|safe }});
+                // 后端数据注入
+                const server = ref(JSON.parse('{{ server_stats|safe }}'));
+                const online = ref(JSON.parse('{{ online_stats|safe }}'));
+                const pieData = JSON.parse('{{ pie_data|safe }}');
+                const trendLabels = JSON.parse('{{ trend_labels|safe }}');
+                const trendValues = JSON.parse('{{ trend_data|safe }}');
+                const topLabelers = ref(JSON.parse('{{ top_labelers|safe }}'));
 
                 let trendChartInst = null;
                 let pieChartInst = null;
 
-                const refreshData = () => {
-                    loading.value = true;
-                    // 这里未来可以接 Ajax 接口刷新真实数据
-                    setTimeout(() => {
-                        currentTime.value = new Date().toLocaleTimeString();
-                        loading.value = false;
-                        location.reload(); // 简单粗暴：刷新页面重新获取 Django 数据
-                    }, 500);
-                };
-
                 const initCharts = () => {
                     // 1. 趋势图
-                    const chartDom = document.getElementById('trendChart');
-                    trendChartInst = echarts.init(chartDom);
-                    trendChartInst.setOption({
-                        tooltip: { trigger: 'axis' },
-                        grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
-                        xAxis: { type: 'category', boundaryGap: false, data: trendLabels },
-                        yAxis: { type: 'value' },
-                        color: ['#3b82f6'],
-                        series: [{
-                            name: '新增任务',
-                            type: 'line',
-                            smooth: true,
-                            areaStyle: { opacity: 0.1 },
-                            data: trendData
-                        }]
-                    });
+                    const trendDom = document.getElementById('trendChart');
+                    if (trendDom) {
+                        trendChartInst = echarts.init(trendDom);
+                        trendChartInst.setOption({
+                            tooltip: { trigger: 'axis' },
+                            grid: { top: 20, right: 20, bottom: 20, left: 40, containLabel: true },
+                            xAxis: { type: 'category', data: trendLabels, axisLine: { lineStyle: { color: '#e2e8f0' } } },
+                            yAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed', color: '#f1f5f9' } } },
+                            series: [{
+                                data: trendValues,
+                                type: 'line',
+                                smooth: true,
+                                itemStyle: { color: '#3b82f6' },
+                                areaStyle: {
+                                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                        { offset: 0, color: 'rgba(59, 130, 246, 0.2)' },
+                                        { offset: 1, color: 'rgba(59, 130, 246, 0)' }
+                                    ])
+                                }
+                            }]
+                        });
+                    }
 
                     // 2. 饼图
                     const pieDom = document.getElementById('pieChart');
-                    pieChartInst = echarts.init(pieDom);
-                    pieChartInst.setOption({
-                        tooltip: { trigger: 'item' },
-                        legend: { bottom: '0', left: 'center' },
-                        color: ['#3b82f6', '#22c55e', '#eab308', '#ef4444', '#94a3b8'],
-                        series: [{
-                            name: '任务状态',
-                            type: 'pie',
-                            radius: ['40%', '70%'],
-                            avoidLabelOverlap: false,
-                            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
-                            label: { show: false },
-                            emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
-                            data: pieData
-                        }]
-                    });
+                    if (pieDom) {
+                        pieChartInst = echarts.init(pieDom);
+                        pieChartInst.setOption({
+                            tooltip: { trigger: 'item' },
+                            legend: { bottom: '0', left: 'center', itemWidth: 10, itemHeight: 10 },
+                            color: ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#94a3b8'],
+                            series: [{
+                                name: '任务状态',
+                                type: 'pie',
+                                radius: ['40%', '70%'],
+                                avoidLabelOverlap: false,
+                                itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+                                label: { show: false },
+                                data: pieData
+                            }]
+                        });
+                    }
                 };
 
                 onMounted(() => {
@@ -249,7 +203,7 @@
                     });
                 });
 
-                return { loading, currentTime, server, online, topLabelers, refreshData };
+                return { server, online, topLabelers };
             }
         }).mount('#dashboard-app');
     </script>
