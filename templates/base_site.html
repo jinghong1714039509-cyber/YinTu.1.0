@@ -13,29 +13,37 @@
     <link href="/static/build/css/custom.min.css" rel="stylesheet">
     
     <style>
-        /* =========================================
-           1. 布局核心修复
-           ========================================= */
+        /* 辅助样式：
+           即使 JS 加载成功，有时 overflow:hidden 也会导致菜单显示不全。
+           这里的样式作为双重保险。
+        */
         .nav-md .container.body .col-md-3.left_col { min-height: 100%; }
         .right_col { min-height: 100vh !important; background-color: #F7F7F7 !important; }
         .main_container { background-color: #2A3F54; }
         
-        /* =========================================
-           2. 下拉菜单修复
-           ========================================= */
+        /* 修复顶部导航栏可能存在的遮挡问题 */
         .top_nav .nav_menu { overflow: visible !important; }
         .navbar-nav > li { position: relative !important; }
-        .navbar-right .dropdown-menu {
-            position: absolute !important; top: 100% !important; right: 0 !important; left: auto !important;
-            z-index: 99999 !important; margin-top: 2px; background-color: #fff;
-            border: 1px solid #d9d9d9; box-shadow: 0 6px 12px rgba(0,0,0,.175); display: none; 
-        }
-        .navbar-nav > li.open .dropdown-menu { display: block !important; }
-        .user-profile { position: relative !important; z-index: 9999 !important; cursor: pointer; }
         
-        /* =========================================
-           3. 界面美化
-           ========================================= */
+        /* 下拉菜单定位修正 
+           Bootstrap 原生下拉菜单需要绝对定位，这里强制对齐
+        */
+        .navbar-right .dropdown-menu {
+            position: absolute !important; 
+            top: 100% !important; 
+            right: 0 !important; 
+            left: auto !important;
+            z-index: 99999 !important; 
+            margin-top: 2px; 
+            background-color: #fff;
+            border: 1px solid #d9d9d9; 
+            box-shadow: 0 6px 12px rgba(0,0,0,.175);
+            /* 注意：不要加 display: block，让 Bootstrap.js 控制显示/隐藏 */
+        }
+        
+        .user-profile { cursor: pointer; }
+        
+        /* 优化面板样式，保持一致性 */
         .x_panel {
             border: none !important; border-radius: 8px !important; background-color: #fff !important;
             box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important; margin-bottom: 20px; padding: 20px !important;
@@ -107,7 +115,7 @@
 
                         <ul class="nav navbar-nav navbar-right">
                             <li class="">
-                                <a href="javascript:;" class="user-profile dropdown-toggle" aria-expanded="false">
+                                <a href="javascript:;" class="user-profile dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
                                     <img src="{% if user.avatar %}/media/{{ user.avatar }}{% else %}/static/images/user.png{% endif %}" alt="">
                                     {% if user.is_authenticated %}
                                         {{ user.username }}
@@ -121,6 +129,11 @@
                                     <li>
                                         <a href="javascript:;">
                                             <span><i class="fa fa-question-circle pull-right"></i> 帮助文档</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{% url 'users:change_password' %}">
+                                            <span><i class="fa fa-key pull-right"></i> 修改密码</span>
                                         </a>
                                     </li>
                                     <li class="divider"></li>
@@ -146,34 +159,20 @@
         </div>
     </div>
 
-    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
-    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    <script src="https://cdn.bootcdn.net/ajax/libs/fastclick/1.0.6/fastclick.min.js"></script>
-    <script src="https://cdn.bootcdn.net/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
+    
     <script src="/static/build/js/custom.min.js"></script>
     
     {% block js %}{% endblock %}
 
     <script>
     $(document).ready(function() {
-        // 点击头像切换菜单
-        $('.user-profile').on('click', function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            var $parent = $(this).parent();
-            if ($parent.hasClass('open')) {
-                $parent.removeClass('open');
-            } else {
-                $('.navbar-nav > li').removeClass('open');
-                $parent.addClass('open');
-            }
-        });
-
-        // 点击空白处关闭菜单
-        $(document).on('click', function() {
-            $('.navbar-nav > li').removeClass('open');
-        });
-        
+        // 移除所有手动冲突代码，完全依赖 Bootstrap 原生行为。
+        // 仅保留防止误触关闭的逻辑（可选）
         $('.dropdown-menu').on('click', function(e){
             e.stopPropagation();
         });
