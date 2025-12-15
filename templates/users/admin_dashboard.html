@@ -2,127 +2,157 @@
 {% block title %}系统概览{% endblock %}
 
 {% block css %}
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { corePlugins: { preflight: false } }
-    </script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-
     <style>
         [v-cloak] { display: none !important; }
     </style>
 {% endblock %}
 
 {% block content %}
-<div class="right_col" role="main" style="min-height: 100vh;">
-    <div id="dashboard-app" v-cloak class="min-h-screen p-6">
-        <div class="max-w-7xl mx-auto space-y-6">
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">管理控制台</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="content" id="dashboard-app" v-cloak>
+    <div class="container-fluid">
+        
+        <div class="row">
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box">
+                    <span class="info-box-icon bg-info elevation-1"><i class="fas fa-microchip"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">服务器 CPU</span>
+                        <span class="info-box-number">
+                            [[ server.cpu ]]
+                            <small>%</small>
+                        </span>
+                    </div>
+                </div>
+            </div>
             
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 invisible select-none">
-                <div>
-                    <h1 class="text-2xl font-bold flex items-center gap-2 m-0 border-0">
-                        <span class="w-6 h-6"></span>
-                        Placeholder
-                    </h1>
-                </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p class="text-xs text-slate-500 font-medium uppercase">服务器 CPU</p>
-                        <p class="text-2xl font-bold text-slate-800 mt-1">[[ server.cpu ]]%</p>
-                    </div>
-                    <div class="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                        <i data-lucide="cpu" class="w-6 h-6"></i>
-                    </div>
-                </div>
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p class="text-xs text-slate-500 font-medium uppercase">内存使用</p>
-                        <p class="text-2xl font-bold text-slate-800 mt-1">[[ server.memory ]]%</p>
-                    </div>
-                    <div class="p-3 bg-purple-50 text-purple-600 rounded-lg">
-                        <i data-lucide="activity" class="w-6 h-6"></i>
-                    </div>
-                </div>
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p class="text-xs text-slate-500 font-medium uppercase">磁盘空间</p>
-                        <p class="text-2xl font-bold text-slate-800 mt-1">[[ server.disk ]]%</p>
-                        <p class="text-[10px] text-slate-400">[[ server.disk_used_gb ]]G / [[ server.disk_total_gb ]]G</p>
-                    </div>
-                    <div class="p-3 bg-orange-50 text-orange-600 rounded-lg">
-                        <i data-lucide="hard-drive" class="w-6 h-6"></i>
-                    </div>
-                </div>
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p class="text-xs text-slate-500 font-medium uppercase">当前在线</p>
-                        <p class="text-2xl font-bold text-green-600 mt-1">[[ online.total ]]</p>
-                        <p class="text-[10px] text-slate-400">医生: [[ online.doctors ]] | 标注: [[ online.labelers ]]</p>
-                    </div>
-                    <div class="p-3 bg-green-50 text-green-600 rounded-lg">
-                        <i data-lucide="users" class="w-6 h-6"></i>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-memory"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">内存使用</span>
+                        <span class="info-box-number">[[ server.memory ]] <small>%</small></span>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-500"></i> 近7日任务新增趋势
-                    </h3>
-                    <div id="trendChart" style="height: 300px; width: 100%;"></div>
-                </div>
-
-                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-500"></i> 任务状态分布
-                    </h3>
-                    <div id="pieChart" style="height: 300px; width: 100%;"></div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-success elevation-1"><i class="fas fa-hdd"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">磁盘空间</span>
+                        <span class="info-box-number">[[ server.disk ]] <small>%</small></span>
+                        <span class="progress-description text-muted" style="font-size: 10px;">
+                            [[ server.disk_used_gb ]]G / [[ server.disk_total_gb ]]G
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="p-5 border-b border-slate-100 flex justify-between items-center">
-                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 m-0">
-                        <i data-lucide="award" class="w-4 h-4 text-yellow-500"></i> 标注员贡献榜 Top 5
-                    </h3>
-                    <span class="text-xs text-slate-400">实时更新</span>
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-users"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">当前在线</span>
+                        <span class="info-box-number">[[ online.total ]]</span>
+                        <span class="progress-description text-muted" style="font-size: 10px;">
+                            医: [[ online.doctors ]] | 标: [[ online.labelers ]]
+                        </span>
+                    </div>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-50 text-xs text-slate-500 uppercase font-semibold">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card card-primary card-outline">
+                    <div class="card-header border-0">
+                        <div class="d-flex justify-content-between">
+                            <h3 class="card-title"><i class="fas fa-chart-line mr-1"></i> 近7日任务新增趋势</h3>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="position-relative mb-4">
+                            <div id="trendChart" style="height: 300px; width: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card card-info card-outline">
+                    <div class="card-header border-0">
+                        <h3 class="card-title"><i class="fas fa-chart-pie mr-1"></i> 任务状态分布</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="position-relative mb-4">
+                            <div id="pieChart" style="height: 300px; width: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header border-0">
+                        <h3 class="card-title"><i class="fas fa-trophy text-warning mr-1"></i> 标注员贡献榜 Top 5</h3>
+                        <div class="card-tools">
+                            <a href="#" class="btn btn-tool btn-sm">
+                                <i class="fas fa-sync-alt"></i> 实时更新
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body table-responsive p-0">
+                        <table class="table table-striped table-valign-middle">
+                            <thead>
                             <tr>
-                                <th class="px-6 py-3">排名</th>
-                                <th class="px-6 py-3">用户</th>
-                                <th class="px-6 py-3">角色</th>
-                                <th class="px-6 py-3 text-right">标注数量</th>
+                                <th>排名</th>
+                                <th>用户</th>
+                                <th>角色</th>
+                                <th class="text-right">标注数量</th>
                             </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            <tr v-for="(user, index) in topLabelers" :key="index" class="hover:bg-slate-50/50">
-                                <td class="px-6 py-3">
-                                    <span v-if="index === 0" class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 text-xs font-bold">1</span>
-                                    <span v-else-if="index === 1" class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs font-bold">2</span>
-                                    <span v-else-if="index === 2" class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-700 text-xs font-bold">3</span>
-                                    <span v-else class="text-slate-500 pl-2 text-sm">[[ index + 1 ]]</span>
+                            </thead>
+                            <tbody>
+                            <tr v-for="(user, index) in topLabelers" :key="index">
+                                <td>
+                                    <span v-if="index === 0" class="badge badge-warning">1</span>
+                                    <span v-else-if="index === 1" class="badge badge-secondary">2</span>
+                                    <span v-else-if="index === 2" class="badge badge-danger">3</span>
+                                    <span v-else class="text-muted ml-2">[[ index + 1 ]]</span>
                                 </td>
-                                <td class="px-6 py-3 font-medium text-slate-700">[[ user.name ]]</td>
-                                <td class="px-6 py-3 text-sm text-slate-500">[[ user.role ]]</td>
-                                <td class="px-6 py-3 text-right font-bold text-indigo-600">[[ user.count ]]</td>
+                                <td>
+                                    <img src="/static/images/user.png" alt="User" class="img-circle img-size-32 mr-2">
+                                    [[ user.name ]]
+                                </td>
+                                <td><span class="text-muted">[[ user.role ]]</span></td>
+                                <td class="text-right">
+                                    <span class="text-success text-bold">
+                                        <i class="fas fa-caret-up"></i> [[ user.count ]]
+                                    </span>
+                                </td>
                             </tr>
                             <tr v-if="topLabelers.length === 0">
-                                <td colspan="4" class="px-6 py-8 text-center text-slate-400 text-sm">暂无标注数据</td>
+                                <td colspan="4" class="text-center text-muted py-4">暂无数据</td>
                             </tr>
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-
         </div>
+
     </div>
 </div>
 {% endblock %}
@@ -134,7 +164,7 @@
         createApp({
             delimiters: ['[[', ']]'],
             setup() {
-                // 后端数据注入
+                // 数据注入 (保持原有的 Django 模板变量)
                 const server = ref(JSON.parse('{{ server_stats|safe }}'));
                 const online = ref(JSON.parse('{{ online_stats|safe }}'));
                 const pieData = JSON.parse('{{ pie_data|safe }}');
@@ -152,18 +182,18 @@
                         trendChartInst = echarts.init(trendDom);
                         trendChartInst.setOption({
                             tooltip: { trigger: 'axis' },
-                            grid: { top: 20, right: 20, bottom: 20, left: 40, containLabel: true },
-                            xAxis: { type: 'category', data: trendLabels, axisLine: { lineStyle: { color: '#e2e8f0' } } },
-                            yAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed', color: '#f1f5f9' } } },
+                            grid: { top: 30, right: 20, bottom: 20, left: 40, containLabel: true },
+                            xAxis: { type: 'category', data: trendLabels, axisLine: { lineStyle: { color: '#ccc' } } },
+                            yAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed', color: '#eee' } } },
                             series: [{
                                 data: trendValues,
                                 type: 'line',
                                 smooth: true,
-                                itemStyle: { color: '#3b82f6' },
+                                itemStyle: { color: '#007bff' },
                                 areaStyle: {
                                     color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                                        { offset: 0, color: 'rgba(59, 130, 246, 0.2)' },
-                                        { offset: 1, color: 'rgba(59, 130, 246, 0)' }
+                                        { offset: 0, color: 'rgba(0, 123, 255, 0.2)' },
+                                        { offset: 1, color: 'rgba(0, 123, 255, 0)' }
                                     ])
                                 }
                             }]
@@ -176,8 +206,7 @@
                         pieChartInst = echarts.init(pieDom);
                         pieChartInst.setOption({
                             tooltip: { trigger: 'item' },
-                            legend: { bottom: '0', left: 'center', itemWidth: 10, itemHeight: 10 },
-                            color: ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#94a3b8'],
+                            legend: { bottom: '0', left: 'center' },
                             series: [{
                                 name: '任务状态',
                                 type: 'pie',
@@ -193,7 +222,6 @@
 
                 onMounted(() => {
                     setTimeout(() => {
-                        if (window.lucide) window.lucide.createIcons();
                         initCharts();
                     }, 100);
 

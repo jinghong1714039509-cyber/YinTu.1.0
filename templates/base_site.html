@@ -1,182 +1,156 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}医疗数据平台{% endblock %}</title>
-    
-    <link href="/static/vendors/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/static/vendors/font-awesome/css/font-awesome.min.css" rel="stylesheet">
-    <link href="/static/vendors/nprogress/nprogress.css" rel="stylesheet">
-    <link href="/static/build/css/custom.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
     
     <style>
-        /* 辅助样式：
-           即使 JS 加载成功，有时 overflow:hidden 也会导致菜单显示不全。
-           这里的样式作为双重保险。
-        */
-        .nav-md .container.body .col-md-3.left_col { min-height: 100%; }
-        .right_col { min-height: 100vh !important; background-color: #F7F7F7 !important; }
-        .main_container { background-color: #2A3F54; }
-        
-        /* 修复顶部导航栏可能存在的遮挡问题 */
-        .top_nav .nav_menu { overflow: visible !important; }
-        .navbar-nav > li { position: relative !important; }
-        
-        /* 下拉菜单定位修正 
-           Bootstrap 原生下拉菜单需要绝对定位，这里强制对齐
-        */
-        .navbar-right .dropdown-menu {
-            position: absolute !important; 
-            top: 100% !important; 
-            right: 0 !important; 
-            left: auto !important;
-            z-index: 99999 !important; 
-            margin-top: 2px; 
-            background-color: #fff;
-            border: 1px solid #d9d9d9; 
-            box-shadow: 0 6px 12px rgba(0,0,0,.175);
-            /* 注意：不要加 display: block，让 Bootstrap.js 控制显示/隐藏 */
-        }
-        
-        .user-profile { cursor: pointer; }
-        
-        /* 优化面板样式，保持一致性 */
-        .x_panel {
-            border: none !important; border-radius: 8px !important; background-color: #fff !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important; margin-bottom: 20px; padding: 20px !important;
-        }
-        .x_title { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
-        footer { background: #F7F7F7 !important; color: #999; padding: 15px 20px; border-top: 1px solid #e7e7e7; }
+        /* 自定义微调 */
+        .content-wrapper { background-color: #f4f6f9; }
+        .nav-sidebar .nav-item > .nav-link.active { background-color: #3498db; color: #fff; }
+        [v-cloak] { display: none; }
     </style>
     {% block css %}{% endblock %}
 </head>
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper">
 
-<body class="nav-md">
-    <div class="container body">
-        <div class="main_container">
-            <div class="col-md-3 left_col">
-                <div class="left_col scroll-view">
-                    <div class="navbar nav_title" style="border: 0;">
-                        <a href="/" class="site_title"><i class="fa fa-heartbeat"></i> <span>YinTu 医疗</span></a>
-                    </div>
-                    <div class="clearfix"></div>
-                    <br />
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="javascript:void(0);" onclick="window.history.back();" class="nav-link">
+                    <i class="fas fa-arrow-left"></i> 返回
+                </a>
+            </li>
+        </ul>
+
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-toggle="dropdown" href="#">
+                    <img src="{% if user.avatar %}/media/{{ user.avatar }}{% else %}/static/images/user.png{% endif %}" 
+                         alt="User Avatar" class="img-circle elevation-1" style="width: 30px; height: 30px; margin-right: 5px;">
+                    {% if user.is_authenticated %}
+                        {{ user.username }}
+                    {% else %}
+                        未登录
+                    {% endif %}
+                </a>
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+                    <a href="#" class="dropdown-item">
+                        <i class="fas fa-question-circle mr-2"></i> 帮助文档
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'users:change_password' %}" class="dropdown-item">
+                        <i class="fas fa-key mr-2"></i> 修改密码
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'users:logout' %}" class="dropdown-item text-danger">
+                        <i class="fas fa-sign-out-alt mr-2"></i> 切换账号 / 退出
+                    </a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <a href="/" class="brand-link">
+            <span class="brand-text font-weight-light px-3"><i class="fas fa-heartbeat"></i> YinTu 医疗</span>
+        </a>
+
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                     
-                    <div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
-                        
-                        {% if user.is_superuser %}
-                        <div class="menu_section">
-                            <h3>🛡️ 超级管理员</h3>
-                            <ul class="nav side-menu">
-                                <li><a href="{% url 'users:admin_dashboard' %}"><i class="fa fa-dashboard"></i> 管理面板</a></li>
-                                <li><a href="{% url 'users:manage_list' %}"><i class="fa fa-users"></i> 账号与权限管理</a></li>
-                                <li><a href="{% url 'users:log_list' %}"><i class="fa fa-history"></i> 操作日志</a></li>
-                            </ul>
-                        </div>
-                        {% endif %}
+                    {% if user.is_superuser %}
+                    <li class="nav-header">超级管理员</li>
+                    <li class="nav-item">
+                        <a href="{% url 'users:admin_dashboard' %}" class="nav-link">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>管理面板</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'users:manage_list' %}" class="nav-link">
+                            <i class="nav-icon fas fa-users"></i>
+                            <p>账号与权限管理</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'users:log_list' %}" class="nav-link">
+                            <i class="nav-icon fas fa-history"></i>
+                            <p>操作日志</p>
+                        </a>
+                    </li>
+                    {% endif %}
 
-                        {% if user.role == 'hospital' or user.is_superuser %}
-                        <div class="menu_section">
-                            <h3>🏥 医院</h3>
-                            <ul class="nav side-menu">
-                                <li><a href="{% url 'hospital:add' %}"><i class="fa fa-plus-circle"></i> 新建病例任务</a></li>
-                                <li><a href="{% url 'hospital:index' %}"><i class="fa fa-list-ul"></i> 任务状态列表</a></li>
-                            </ul>
-                        </div>
-                        {% endif %}
+                    {% if user.role == 'hospital' or user.is_superuser %}
+                    <li class="nav-header">医院 / 医生</li>
+                    <li class="nav-item">
+                        <a href="{% url 'hospital:add' %}" class="nav-link">
+                            <i class="nav-icon fas fa-plus-circle"></i>
+                            <p>新建病例任务</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'hospital:index' %}" class="nav-link">
+                            <i class="nav-icon fas fa-list-ul"></i>
+                            <p>任务状态列表</p>
+                        </a>
+                    </li>
+                    {% endif %}
 
-                        {% if user.role == 'labeler' or user.is_superuser %}
-                        <div class="menu_section">
-                            <h3>🏷️ 标注</h3>
-                            <ul class="nav side-menu">
-                                <li><a href="{% url 'labeler:dashboard' %}"><i class="fa fa-folder-open"></i> 任务大厅</a></li>
-                            </ul>
-                        </div>
-                        {% endif %}
-                        
-                    </div>
-                </div>
-            </div>
-
-            <div class="top_nav">
-                <div class="nav_menu">
-                    <nav>
-                        <div class="nav toggle">
-                            <a id="menu_toggle"><i class="fa fa-bars"></i></a>
-                        </div>
-                        <div class="nav toggle" style="width: auto; padding-left: 15px;">
-                            <a href="javascript:void(0);" onclick="window.history.back();" style="font-size: 16px;">
-                                <i class="fa fa-arrow-left"></i> 返回
-                            </a>
-                        </div>
-
-                        <ul class="nav navbar-nav navbar-right">
-                            <li class="">
-                                <a href="javascript:;" class="user-profile dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-                                    <img src="{% if user.avatar %}/media/{{ user.avatar }}{% else %}/static/images/user.png{% endif %}" alt="">
-                                    {% if user.is_authenticated %}
-                                        {{ user.username }}
-                                        <span class=" fa fa-angle-down"></span>
-                                    {% else %}
-                                        未登录
-                                    {% endif %}
-                                </a>
-                                
-                                <ul class="dropdown-menu dropdown-usermenu pull-right">
-                                    <li>
-                                        <a href="javascript:;">
-                                            <span><i class="fa fa-question-circle pull-right"></i> 帮助文档</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="{% url 'users:change_password' %}">
-                                            <span><i class="fa fa-key pull-right"></i> 修改密码</span>
-                                        </a>
-                                    </li>
-                                    <li class="divider"></li>
-                                    <li>
-                                        <a href="{% url 'users:logout' %}">
-                                            <i class="fa fa-sign-out pull-right"></i> 
-                                            <strong>🔄 切换账号 / 退出</strong>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
-            </div>
-
-            {% block content %}{% endblock %}
-
-            <footer>
-                <div class="pull-right">YinTu System v1.0</div>
-                <div class="clearfix"></div>
-            </footer>
+                    {% if user.role == 'labeler' or user.is_superuser %}
+                    <li class="nav-header">标注工作台</li>
+                    <li class="nav-item">
+                        <a href="{% url 'labeler:dashboard' %}" class="nav-link">
+                            <i class="nav-icon fas fa-folder-open"></i>
+                            <p>任务大厅</p>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                </ul>
+            </nav>
         </div>
+    </aside>
+
+    <div class="content-wrapper">
+        {% block content %}{% endblock %}
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
-    
-    <script src="/static/build/js/custom.min.js"></script>
-    
-    {% block js %}{% endblock %}
+    <footer class="main-footer text-sm">
+        <div class="float-right d-none d-sm-block">
+            <b>Version</b> 1.0.0
+        </div>
+        <strong>Copyright &copy; 2024 <a href="#">YinTu System</a>.</strong> All rights reserved.
+    </footer>
 
-    <script>
-    $(document).ready(function() {
-        // 移除所有手动冲突代码，完全依赖 Bootstrap 原生行为。
-        // 仅保留防止误触关闭的逻辑（可选）
-        $('.dropdown-menu').on('click', function(e){
-            e.stopPropagation();
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+
+<script>
+    // 自动高亮当前菜单逻辑
+    $(document).ready(function () {
+        var url = window.location.href;
+        $('.nav-sidebar a').each(function () {
+            if (this.href === url || url.indexOf(this.href) === 0) {
+                $(this).addClass('active');
+                $(this).parents('.nav-item').addClass('menu-open');
+                $(this).parents('.nav-treeview').show();
+            }
         });
     });
-    </script>
+</script>
+
+{% block js %}{% endblock %}
 </body>
 </html>

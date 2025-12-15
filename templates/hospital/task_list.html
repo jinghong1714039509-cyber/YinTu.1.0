@@ -4,186 +4,147 @@
 {% block title %}任务状态列表{% endblock %}
 
 {% block content %}
-<style>
-    /* 复用 dashboard.html 的卡片样式 */
-    .task-card {
-        background: #fff;
-        border: 1px solid #E6E9ED;
-        border-radius: 6px;
-        margin-bottom: 25px;
-        transition: all 0.3s;
-        position: relative;
-        overflow: hidden;
-    }
-    .task-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        border-color: #1ABB9C;
-    }
-    /* 顶部彩色条 */
-    .card-stripe { height: 6px; width: 100%; background: #3498db; }
-    .card-stripe.processing { background: #3498db; animation: stripe-pulse 2s infinite; }
-    .card-stripe.done { background: #1ABB9C; } /* 完成变绿 */
-    .card-stripe.error { background: #E74C3C; } /* 异常变红 */
-    
-    @keyframes stripe-pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-
-    .card-body { padding: 20px; }
-    
-    /* 标题与头部 */
-    .card-header-flex { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
-    .task-code { font-family: monospace; background: #f5f5f5; padding: 2px 6px; border-radius: 4px; color: #666; font-size: 12px; }
-    .task-name { font-size: 18px; font-weight: bold; color: #333; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; margin-bottom: 5px; }
-    
-    /* 数据区 */
-    .stat-row { display: flex; justify-content: space-between; margin: 15px 0; text-align: center; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 10px 0; }
-    .stat-item h3 { margin: 0; font-size: 20px; font-weight: bold; color: #555; }
-    .stat-item span { font-size: 11px; color: #999; text-transform: uppercase; }
-    
-    /* 底部按钮组 */
-    .card-actions { display: flex; gap: 10px; margin-top: 15px; }
-    .btn-action { flex: 1; border-radius: 30px; font-size: 13px; padding: 6px 0; }
-    
-    /* 状态标签样式调整 */
-    .label-processing { background-color: #5bc0de; }
-    .label-error { background-color: #d9534f; }
-</style>
-
-<div class="right_col" role="main">
-    <div class="page-title">
-        <div class="title_left">
-            <h3>任务状态列表</h3>
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>任务状态列表</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="/">首页</a></li>
+                    <li class="breadcrumb-item active">任务列表</li>
+                </ol>
+            </div>
         </div>
-        </div>
-    <div class="clearfix"></div>
+    </div>
+</section>
 
-    <div class="row">
-        {% if tasks %}
-            {% for task in tasks %}
-            <div class="col-md-4 col-sm-6 col-xs-12">
-                <div class="task-card">
-                    {% if task.state == 2 %}
-                        <div class="card-stripe done"></div>
-                    {% elif task.state == 9 %}
-                        <div class="card-stripe error"></div>
-                    {% elif task.state == 0 %}
-                        <div class="card-stripe processing"></div>
-                    {% else %}
-                        <div class="card-stripe"></div>
-                    {% endif %}
-                    
-                    <div class="card-body">
-                        <div class="card-header-flex">
-                            <span class="task-code">#{{ task.code }}</span>
-                            {% if task.state == 0 %}
-                                <span class="label label-processing"><i class="fa fa-spinner fa-spin"></i> 处理中</span>
-                            {% elif task.state == 1 %}
-                                <span class="label label-primary">进行中</span>
-                            {% elif task.state == 2 %}
-                                <span class="label label-success"><i class="fa fa-check-circle"></i> 已完成</span>
-                            {% elif task.state == 9 %}
-                                <span class="label label-error">异常</span>
-                            {% else %}
-                                <span class="label label-default">未知</span>
-                            {% endif %}
-                        </div>
-
-                        <h3 class="task-name" title="{{ task.name }}">{{ task.name }}</h3>
-                        <div class="text-muted" style="font-size: 12px; margin-bottom: 10px; height: 36px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-                            {{ task.remark|default:"暂无备注信息" }}
-                        </div>
-
-                        <div class="progress progress_sm" style="margin-bottom: 5px;">
-                            <div class="progress-bar {% if task.state == 2 %}bg-green{% elif task.state == 9 %}bg-red{% else %}bg-blue{% endif %}" role="progressbar" style="width: {{ task.progress }}%;"></div>
-                        </div>
-                        <div style="font-size: 12px; color: #999; text-align: right;">
-                            进度: {{ task.progress }}%
-                        </div>
-
-                        <div class="stat-row">
-                            <div class="stat-item">
-                                <span>总样本</span>
-                                <h3>{{ task.sample_count }}</h3>
-                            </div>
-                            <div class="stat-item">
-                                <span>已标注</span>
-                                <h3 class="text-success">{{ task.labeled_count }}</h3>
-                            </div>
-                            <div class="stat-item">
-                                <span>剩余</span>
-                                <h3 class="text-danger">{{ task.sample_count|add:"-"|add:task.labeled_count }}</h3>
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            {% if tasks %}
+                {% for task in tasks %}
+                <div class="col-md-4 col-sm-6 col-12">
+                    <div class="card {% if task.state == 2 %}card-success{% elif task.state == 9 %}card-danger{% elif task.state == 0 %}card-primary{% else %}card-outline card-primary{% endif %}">
+                        <div class="card-header">
+                            <h3 class="card-title text-truncate" style="max-width: 70%;" title="{{ task.name }}">{{ task.name }}</h3>
+                            <div class="card-tools">
+                                <span class="badge badge-light">#{{ task.code }}</span>
+                                {% if task.state == 0 %}
+                                    <span class="badge badge-primary"><i class="fas fa-spinner fa-spin"></i> 处理中</span>
+                                {% elif task.state == 1 %}
+                                    <span class="badge badge-info">进行中</span>
+                                {% elif task.state == 2 %}
+                                    <span class="badge badge-success"><i class="fas fa-check"></i> 完成</span>
+                                {% elif task.state == 9 %}
+                                    <span class="badge badge-danger">异常</span>
+                                {% endif %}
                             </div>
                         </div>
+                        
+                        <div class="card-body">
+                            <p class="text-muted text-sm mb-3 text-truncate" title="{{ task.remark|default:'暂无备注信息' }}">
+                                {{ task.remark|default:"暂无备注信息" }}
+                            </p>
 
-                        <div class="card-actions">
-                            <a href="javascript:;" class="btn btn-default btn-action">
-                                详情
-                            </a>
-                            
-                            {% if task.state >= 1 %}
-                            <a href="{% url 'labeler:gallery' task.id %}" class="btn btn-info btn-action">
-                                <i class="fa fa-eye"></i> 预览
-                            </a>
-                            {% else %}
-                            <button class="btn btn-default btn-action" disabled>预览</button>
-                            {% endif %}
-                            
-                            {% if task.patient_file_path %}
-                            <a href="/media/{{ task.patient_file_path }}" download class="btn btn-success btn-action" title="下载病例">
-                                <i class="fa fa-file-text-o"></i> 下载
-                            </a>
-                            {% else %}
-                            <button class="btn btn-default btn-action" disabled title="无病例文件">下载</button>
-                            {% endif %}
+                            <div class="progress progress-xs mb-1">
+                                <div class="progress-bar {% if task.state == 2 %}bg-success{% elif task.state == 9 %}bg-danger{% else %}bg-primary{% endif %}" 
+                                     role="progressbar" style="width: {{ task.progress }}%"></div>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3">
+                                <small class="text-muted">进度</small>
+                                <small class="text-bold">{{ task.progress }}%</small>
+                            </div>
+
+                            <div class="row text-center border-top pt-3">
+                                <div class="col-4 border-right">
+                                    <h5 class="mb-0">{{ task.sample_count }}</h5>
+                                    <span class="text-xs text-muted text-uppercase">总样本</span>
+                                </div>
+                                <div class="col-4 border-right">
+                                    <h5 class="mb-0 text-success">{{ task.labeled_count }}</h5>
+                                    <span class="text-xs text-muted text-uppercase">已标</span>
+                                </div>
+                                <div class="col-4">
+                                    <h5 class="mb-0 text-danger">{{ task.sample_count|add:"-"|add:task.labeled_count }}</h5>
+                                    <span class="text-xs text-muted text-uppercase">剩余</span>
+                                </div>
+                            </div>
                         </div>
-
+                        
+                        <div class="card-footer p-2">
+                            <div class="row">
+                                <div class="col-4">
+                                    <a href="javascript:;" class="btn btn-default btn-block btn-sm">详情</a>
+                                </div>
+                                <div class="col-4">
+                                    {% if task.state >= 1 %}
+                                    <a href="{% url 'labeler:gallery' task.id %}" class="btn btn-outline-info btn-block btn-sm">
+                                        <i class="fas fa-eye"></i> 预览
+                                    </a>
+                                    {% else %}
+                                    <button class="btn btn-default btn-block btn-sm" disabled>预览</button>
+                                    {% endif %}
+                                </div>
+                                <div class="col-4">
+                                    {% if task.patient_file_path %}
+                                    <a href="/media/{{ task.patient_file_path }}" download class="btn btn-success btn-block btn-sm">
+                                        <i class="fas fa-download"></i> 下载
+                                    </a>
+                                    {% else %}
+                                    <button class="btn btn-default btn-block btn-sm" disabled>下载</button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            {% endfor %}
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center py-5">
+                            <i class="far fa-folder-open fa-4x text-muted mb-3"></i>
+                            <h4 class="text-secondary">暂无任务</h4>
+                            <p>您还没有创建任何病例标注任务。</p>
+                            <a href="{% url 'hospital:add' %}" class="btn btn-primary mt-2">
+                                <i class="fas fa-plus"></i> 立即创建
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
 
-            <div class="clearfix"></div>
-            
-            <div class="row text-center">
-                <div class="col-md-12">
-                    <ul class="pagination">
+        {% if tasks.has_other_pages %}
+        <div class="row">
+            <div class="col-12">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
                         {% if tasks.has_previous %}
-                            <li><a href="?page={{ tasks.previous_page_number }}">上一页</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ tasks.previous_page_number }}">上一页</a></li>
                         {% else %}
-                            <li class="disabled"><span>上一页</span></li>
+                            <li class="page-item disabled"><a class="page-link" href="#">上一页</a></li>
                         {% endif %}
-
-                        <li class="active"><span>第 {{ tasks.number }} 页 / 共 {{ tasks.paginator.num_pages }} 页</span></li>
-
+                        <li class="page-item active"><span class="page-link">{{ tasks.number }} / {{ tasks.paginator.num_pages }}</span></li>
                         {% if tasks.has_next %}
-                            <li><a href="?page={{ tasks.next_page_number }}">下一页</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ tasks.next_page_number }}">下一页</a></li>
                         {% else %}
-                            <li class="disabled"><span>下一页</span></li>
+                            <li class="page-item disabled"><a class="page-link" href="#">下一页</a></li>
                         {% endif %}
                     </ul>
-                </div>
+                </nav>
             </div>
-
-        {% else %}
-            <div class="col-md-12">
-                <div class="x_panel text-center" style="padding: 50px;">
-                    <i class="fa fa-folder-open-o" style="font-size: 50px; color: #ccc;"></i>
-                    <h3 style="color: #666;">暂无任务</h3>
-                    <p class="text-muted">您还没有创建任何病例标注任务。</p>
-                    <a href="{% url 'hospital:add' %}" class="btn btn-primary btn-lg" style="margin-top: 20px;">
-                        <i class="fa fa-plus"></i> 立即创建
-                    </a>
-                </div>
-            </div>
+        </div>
         {% endif %}
     </div>
-</div>
+</section>
 {% endblock %}
 
 {% block js %}
     <script>
-        // 自动刷新处理中的任务 (保留原有逻辑)
-        // 检查页面是否存在 fa-spin 图标，如果存在说明有任务在处理中
+        // 自动刷新处理中的任务
         if (document.querySelector('.fa-spin')) {
             setTimeout(() => {
                 window.location.reload();

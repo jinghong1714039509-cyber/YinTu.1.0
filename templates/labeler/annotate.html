@@ -5,58 +5,132 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>标注: {{ sample.original_name }}</title>
-    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
     
     <style>
-        body { background-color: #2A3F54; color: #ecf0f1; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; height: 100vh; overflow: hidden; margin: 0; user-select: none; }
+        /* 独立工作台样式，适配 AdminLTE Dark Theme */
+        body { 
+            background-color: #343a40; /* AdminLTE Dark Sidebar Color */
+            color: #c2c7d0; 
+            font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            height: 100vh; 
+            overflow: hidden; 
+            margin: 0; 
+            user-select: none; 
+        }
+        
         .workspace { display: flex; height: 100vh; }
-        .canvas-container { flex: 1; background: #1a1a1a; position: relative; overflow: auto; display: flex; justify-content: center; align-items: center; }
+        
+        .canvas-container { 
+            flex: 1; 
+            background: #2a2d32; /* 稍浅一点的背景用于区分 */
+            position: relative; 
+            overflow: auto; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
         
         /* 图片容器 */
-        .img-wrapper { position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.8); -webkit-user-drag: none; min-width: 200px; min-height: 200px; }
+        .img-wrapper { 
+            position: relative; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); 
+            -webkit-user-drag: none; 
+            min-width: 200px; min-height: 200px; 
+        }
         
-        /* 确保图片有默认样式，防止加载失败时塌陷 */
-        #target-image { display: block; max-width: 90vw; max-height: 90vh; background: #333; min-height: 100px; }
+        #target-image { display: block; max-width: 90vw; max-height: 90vh; background: #333; }
         #annotation-layer { position: absolute; top: 0; left: 0; cursor: crosshair; z-index: 10; }
 
-        .sidebar { width: 300px; background: #2A3F54; border-left: 1px solid #445D76; display: flex; flex-direction: column; z-index: 20; box-shadow: -5px 0 15px rgba(0,0,0,0.2); }
-        .sidebar-header { padding: 15px; background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .sidebar-content { flex: 1; overflow-y: auto; padding: 15px; }
-        .sidebar-footer { padding: 15px; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.1); }
+        /* 侧边栏 */
+        .sidebar-panel { 
+            width: 320px; 
+            background: #343a40; 
+            border-left: 1px solid #4b545c; 
+            display: flex; 
+            flex-direction: column; 
+            z-index: 20; 
+            box-shadow: -5px 0 15px rgba(0,0,0,0.2); 
+        }
+        .sidebar-header { 
+            padding: 1rem; 
+            background: #3f474e; 
+            border-bottom: 1px solid #4b545c; 
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .sidebar-content { flex: 1; overflow-y: auto; padding: 1rem; }
+        .sidebar-footer { padding: 1rem; border-top: 1px solid #4b545c; background: #3f474e; }
         
-        .anno-item { background: rgba(255,255,255,0.1); padding: 10px; margin-bottom: 5px; font-size: 13px; border-radius: 3px; position: relative; border-left: 4px solid #ccc; transition: all 0.2s; }
-        .anno-item:hover { background: rgba(255,255,255,0.2); }
-        .anno-item .remove-btn { position: absolute; top: 10px; right: 10px; cursor: pointer; color: #E74C3C; opacity: 0.7; }
-        .anno-item .remove-btn:hover { opacity: 1; transform: scale(1.1); }
+        /* 标注项 */
+        .anno-item { 
+            background: #454d55; 
+            padding: 10px; 
+            margin-bottom: 8px; 
+            font-size: 14px; 
+            border-radius: 4px; 
+            position: relative; 
+            border-left: 4px solid #ccc; 
+            transition: all 0.2s; 
+            color: #fff;
+        }
+        .anno-item:hover { background: #515a63; }
+        .anno-item .remove-btn { 
+            position: absolute; top: 10px; right: 10px; 
+            cursor: pointer; color: #dc3545; opacity: 0.8; 
+        }
+        .anno-item .remove-btn:hover { opacity: 1; }
         
-        .toolbar { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(44, 62, 80, 0.95); padding: 8px 25px; border-radius: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); z-index: 100; display: flex; gap: 15px; align-items: center; border: 1px solid #555; }
+        /* 顶部悬浮工具栏 */
+        .floating-toolbar { 
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%); 
+            background: rgba(52, 58, 64, 0.9); 
+            padding: 8px 20px; 
+            border-radius: 50px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); 
+            z-index: 100; 
+            display: flex; gap: 10px; align-items: center; 
+            border: 1px solid #6c757d; 
+        }
         
-        #label-modal { position: absolute; display: none; background: #fff; color: #333; padding: 15px; border-radius: 6px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); z-index: 9999; min-width: 240px; border: 1px solid #ccc; }
-        #label-modal h5 { margin: 0 0 10px 0; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        /* 标签选择弹窗 */
+        #label-modal { 
+            position: absolute; display: none; 
+            background: #fff; color: #333; 
+            padding: 15px; border-radius: 5px; 
+            box-shadow: 0 5px 25px rgba(0,0,0,0.5); 
+            z-index: 9999; min-width: 250px; 
+        }
         
-        /* 错误提示层 */
-        #error-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 999; justify-content: center; align-items: center; flex-direction: column; text-align: center; }
+        /* 错误层 */
+        #error-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 999; justify-content: center; align-items: center; flex-direction: column; text-align: center; }
     </style>
 </head>
 <body>
 
     <div id="error-overlay">
-        <h3 class="text-danger"><i class="fa fa-exclamation-triangle"></i> 图片加载失败</h3>
-        <p id="error-msg">无法读取图片文件，请检查路径。</p>
-        <p class="text-muted" style="font-size:12px;">路径: <span id="img-src-debug"></span></p>
-        <button class="btn btn-default btn-sm" onclick="location.reload()">刷新重试</button>
+        <h3 class="text-danger"><i class="fas fa-exclamation-triangle"></i> 图片加载失败</h3>
+        <p class="text-light">无法读取图片文件，请检查路径或网络。</p>
+        <button class="btn btn-secondary btn-sm" onclick="location.reload()">刷新重试</button>
     </div>
 
-    <div class="toolbar">
-        <a href="{% url 'labeler:dashboard' %}" class="btn btn-default btn-xs" title="返回工作台"><i class="fa fa-home"></i> 工作台</a>
-        <select id="lang-switch" class="form-control input-sm" style="width: 80px; padding: 2px 5px; height: 26px; font-size: 12px;">
+    <div class="floating-toolbar">
+        <a href="{% url 'labeler:dashboard' %}" class="btn btn-secondary btn-sm" title="返回"><i class="fas fa-arrow-left"></i></a>
+        
+        <select id="lang-switch" class="custom-select custom-select-sm" style="width: 80px; height: 31px;">
             <option value="cn">中文</option>
             <option value="en">EN</option>
         </select>
-        <span style="font-size: 13px; font-weight: bold; margin: 0 5px;">{{ sample.original_name }}</span>
-        <button class="btn btn-primary btn-xs" onclick="finishPolygon()" id="btn-finish" disabled><i class="fa fa-check"></i> 闭合 (Enter)</button>
-        <button class="btn btn-warning btn-xs" onclick="undoPoint()"><i class="fa fa-undo"></i> 撤销 (Right Click)</button>
+        
+        <span class="text-light mx-2 small font-weight-bold d-none d-md-inline">{{ sample.original_name }}</span>
+        
+        <button class="btn btn-primary btn-sm" onclick="finishPolygon()" id="btn-finish" disabled>
+            <i class="fas fa-check"></i> 闭合 (Enter)
+        </button>
+        <button class="btn btn-warning btn-sm" onclick="undoPoint()">
+            <i class="fas fa-undo"></i> 撤销 (Right Click)
+        </button>
     </div>
 
     <div class="workspace">
@@ -67,30 +141,43 @@
             </div>
             
             <div id="label-modal">
-                <h5>选择部位 / Label</h5>
-                <select id="label-select" class="form-control input-sm" style="margin-bottom:15px;">
+                <h6 class="border-bottom pb-2 mb-3 font-weight-bold">选择部位 / Label</h6>
+                <select id="label-select" class="form-control form-control-sm mb-3">
                     {% for item in label_config %}
                     <option value="{{ item.code }}" data-cn="{{ item.name_cn }}" data-en="{{ item.name_en }}">{{ item.name_cn }}</option>
                     {% empty %}
                     <option value="nodule" data-cn="结节" data-en="Nodule">结节 (默认)</option>
                     {% endfor %}
                 </select>
-                <div class="text-right">
+                <div class="d-flex justify-content-between">
                     <button class="btn btn-default btn-sm" onclick="cancelShape()">丢弃</button>
                     <button class="btn btn-success btn-sm" onclick="confirmShape()">确定</button>
                 </div>
             </div>
         </div>
 
-        <div class="sidebar">
-            <div class="sidebar-header"><h4 style="margin:0;"><i class="fa fa-list-ul"></i> 标注列表</h4></div>
+        <div class="sidebar-panel">
+            <div class="sidebar-header">
+                <h5 class="m-0"><i class="fas fa-list-ul mr-2"></i> 标注列表</h5>
+            </div>
             <div class="sidebar-content" id="list-container">
-                <div class="text-center text-muted" style="margin-top:50px; color: #777;"><i class="fa fa-mouse-pointer"></i> 点击图片开始绘制</div>
+                <div class="text-center text-muted mt-5">
+                    <i class="fas fa-mouse-pointer fa-2x mb-2"></i>
+                    <p class="small">点击图片开始绘制</p>
+                </div>
             </div>
             <div class="sidebar-footer">
-                <button class="btn btn-success btn-block btn-lg" id="btn-save-server" onclick="saveToServer()"><i class="fa fa-cloud-upload"></i> 提交结果</button>
+                <button class="btn btn-success btn-block" id="btn-save-server" onclick="saveToServer()">
+                    <i class="fas fa-cloud-upload-alt mr-1"></i> 提交结果
+                </button>
                 {% if next_sample %}
-                <a href="{% url 'labeler:annotate' next_sample.id %}" class="btn btn-default btn-block btn-sm" style="margin-top:10px; background: transparent; color: #ccc; border-color: #555;">跳过，下一张 <i class="fa fa-arrow-right"></i></a>
+                <a href="{% url 'labeler:annotate' next_sample.id %}" class="btn btn-outline-secondary btn-block btn-sm mt-3">
+                    跳过，下一张 <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+                {% else %}
+                <a href="{% url 'labeler:dashboard' %}" class="btn btn-outline-secondary btn-block btn-sm mt-3">
+                    返回大厅
+                </a>
                 {% endif %}
             </div>
         </div>
@@ -98,73 +185,62 @@
 
     {{ sample.annotation_content|default:"[]"|json_script:"init-data" }}
 
-    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script>
-        // === 1. 配置加载与清洗 ===
+        // === 1. 配置加载与初始化 ===
         const COLOR_MAP = {}; const LABEL_MAP_CN = {}; const LABEL_MAP_EN = {};
         {% for item in label_config %}
             COLOR_MAP['{{ item.code }}'] = '{{ item.color }}';
             LABEL_MAP_CN['{{ item.code }}'] = '{{ item.name_cn }}';
             LABEL_MAP_EN['{{ item.code }}'] = '{{ item.name_en }}';
         {% endfor %}
-        
-        // 兜底配置（防止 views.py 没传配置）
         if(Object.keys(COLOR_MAP).length === 0) { COLOR_MAP['nodule'] = '#e74c3c'; }
 
-        // === 数据清洗核心 ===
         let initialData = [];
         try {
             const scriptTag = document.getElementById('init-data');
             if(scriptTag && scriptTag.textContent) {
                 let raw = JSON.parse(scriptTag.textContent);
-                // 【关键修复】如果解出来还是字符串（例如 "[]"），则再解一次
-                if (typeof raw === 'string') {
-                    try { raw = JSON.parse(raw); } catch(e){ raw = []; }
-                }
+                if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch(e){ raw = []; } }
                 initialData = Array.isArray(raw) ? raw : [];
             }
-        } catch(e) { console.error("数据解析失败，重置为空", e); initialData = []; }
+        } catch(e) { console.error(e); initialData = []; }
 
         const state = { isDrawing: false, points: [], annotations: initialData, scale: 1, mouse: {x: 0, y: 0}, lang: 'cn' };
         const canvas = document.getElementById('annotation-layer');
         const ctx = canvas.getContext('2d');
         const img = document.getElementById('target-image');
 
-        // === 2. 图片加载处理 ===
-        function handleImgError(image) {
-            $('#img-src-debug').text(image.src);
-            $('#error-overlay').css('display', 'flex'); // 显示报错遮罩
-        }
+        // === 2. 核心逻辑 ===
+        function handleImgError(image) { $('#error-overlay').css('display', 'flex'); }
 
         function initCanvas() {
-            // 即使图片没加载完，只要有尺寸也尝试初始化
-            if (img.naturalWidth === 0 && img.width === 0) return; 
-            
+            if (img.naturalWidth === 0 && img.width === 0) return;
             canvas.width = img.naturalWidth || img.width;
             canvas.height = img.naturalHeight || img.height;
             $(canvas).css({ width: $(img).width() + 'px', height: $(img).height() + 'px' });
             state.scale = (img.naturalWidth || img.width) / $(img).width();
-            
             render(); updateSidebar();
         }
-        
         $(window).on('load resize', initCanvas);
         if (img.complete) initCanvas(); else img.onload = initCanvas;
 
-        // === 3. 交互逻辑 ===
         function getRealCoordinates(event) {
             const rect = canvas.getBoundingClientRect();
             return { x: (event.clientX - rect.left) * state.scale, y: (event.clientY - rect.top) * state.scale };
         }
 
+        // 鼠标事件
         $(canvas).on('mousedown', function(e) {
-            if(e.button === 2) { undoPoint(); return; }
+            if(e.button === 2) { undoPoint(); return; } // 右键撤销
             if($('#label-modal').is(':visible')) return;
 
             const pos = getRealCoordinates(e);
             if (!state.isDrawing) {
                 state.isDrawing = true; state.points = [pos];
-                $('#btn-finish').prop('disabled', false).html('<i class="fa fa-circle-o"></i> 点击起点闭合');
+                $('#btn-finish').prop('disabled', false).html('<i class="fas fa-circle"></i> 点击起点闭合');
             } else {
                 const start = state.points[0];
                 if (state.points.length >= 3 && Math.hypot(pos.x - start.x, pos.y - start.y) < (20 * state.scale)) {
@@ -177,7 +253,8 @@
 
         $(canvas).on('mousemove', function(e) {
             state.mouse = getRealCoordinates(e);
-            if(state.isDrawing) { render(); 
+            if(state.isDrawing) { 
+                render();
                 if(state.points.length >= 3) {
                     const start = state.points[0];
                     canvas.style.cursor = (Math.hypot(state.mouse.x - start.x, state.mouse.y - start.y) < 20 * state.scale) ? 'pointer' : 'crosshair';
@@ -186,35 +263,45 @@
         });
 
         $(document).keydown(function(e) {
-            if (e.key === 'Enter') { if($('#label-modal').is(':visible')) confirmShape(); else if(state.isDrawing) finishPolygon(); }
+            if (e.key === 'Enter') { 
+                if($('#label-modal').is(':visible')) confirmShape(); 
+                else if(state.isDrawing) finishPolygon(); 
+            }
             if (e.key === 'Escape') cancelShape();
             if ((e.key === 'Delete' || e.key === 'Backspace') && state.isDrawing) undoPoint();
         });
         $(canvas).on('contextmenu', e => false);
 
-        // === 4. 渲染引擎 ===
+        // 渲染函数
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // 绘制已保存形状
             state.annotations.forEach((anno, idx) => {
                 const color = COLOR_MAP[anno.label] || '#cccccc';
                 drawPath(anno.points, color, true);
+                // 绘制标签文字
                 const center = getCenter(anno.points);
-                ctx.fillStyle = "white"; ctx.font = `bold ${16 * state.scale}px Arial`; ctx.shadowColor="black"; ctx.shadowBlur=4;
+                ctx.fillStyle = "white"; ctx.font = `bold ${16 * state.scale}px "Source Sans Pro"`; 
+                ctx.shadowColor="black"; ctx.shadowBlur=4;
                 let name = anno.label;
                 if (state.lang === 'cn' && LABEL_MAP_CN[anno.label]) name = LABEL_MAP_CN[anno.label];
                 else if (state.lang === 'en' && LABEL_MAP_EN[anno.label]) name = LABEL_MAP_EN[anno.label];
                 ctx.fillText(`#${idx+1} ${name}`, center.x, center.y); ctx.shadowBlur=0;
             });
+            // 绘制正在画的形状
             if (state.isDrawing && state.points.length > 0) {
-                drawPath(state.points, '#00ff00', false);
+                drawPath(state.points, '#28a745', false); // Green
+                // 橡皮筋线
                 const last = state.points[state.points.length - 1];
                 ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(state.mouse.x, state.mouse.y);
-                ctx.strokeStyle = 'rgba(0,255,0,0.6)'; ctx.setLineDash([5 * state.scale, 5 * state.scale]); ctx.lineWidth = 2 * state.scale; ctx.stroke(); ctx.setLineDash([]);
+                ctx.strokeStyle = 'rgba(40, 167, 69, 0.6)'; ctx.setLineDash([5 * state.scale, 5 * state.scale]); 
+                ctx.lineWidth = 2 * state.scale; ctx.stroke(); ctx.setLineDash([]);
+                // 起点吸附提示
                 if(state.points.length >= 3) {
                     const start = state.points[0];
                     if (Math.hypot(state.mouse.x - start.x, state.mouse.y - start.y) < 20 * state.scale) {
                         ctx.beginPath(); ctx.arc(start.x, start.y, 10 * state.scale, 0, Math.PI * 2);
-                        ctx.fillStyle = 'rgba(255, 255, 0, 0.5)'; ctx.fill(); ctx.strokeStyle = 'white'; ctx.stroke();
+                        ctx.fillStyle = 'rgba(255, 193, 7, 0.5)'; ctx.fill(); ctx.strokeStyle = 'white'; ctx.stroke();
                     }
                 }
             }
@@ -231,7 +318,7 @@
             }
         }
 
-        // === 5. 辅助函数 ===
+        // === 3. 辅助交互 ===
         $('#lang-switch').change(function() {
             state.lang = $(this).val();
             $('#label-select option').each(function() {
@@ -240,13 +327,82 @@
             render(); updateSidebar();
         });
 
-        function finishPolygon() { if(state.points.length < 3) { alert("至少3个点"); return; } const cx = $(window).width()/2 - 120, cy = $(window).height()/2 - 100; $('#label-modal').css({left: cx, top: cy}).fadeIn(150); $('#label-select').focus(); }
-        function undoPoint() { if(state.isDrawing && state.points.length > 0) { state.points.pop(); if(state.points.length === 0) cancelShape(); render(); } }
-        window.confirmShape = function() { const code = $('#label-select').val(); state.annotations.push({ points: [...state.points], label: code }); cancelShape(); updateSidebar(); };
-        window.cancelShape = function() { state.isDrawing = false; state.points = []; $('#label-modal').hide(); $('#btn-finish').prop('disabled', true).html('<i class="fa fa-check"></i> 闭合'); render(); };
-        function updateSidebar() { const $list = $('#list-container'); $list.empty(); if(state.annotations.length === 0) { $list.html('<div class="text-center text-muted" style="margin-top:50px;">暂无标注</div>'); return; } state.annotations.forEach((anno, i) => { const color = COLOR_MAP[anno.label] || '#ccc'; let name = anno.label; if (state.lang === 'cn' && LABEL_MAP_CN[anno.label]) name = LABEL_MAP_CN[anno.label]; else if (state.lang === 'en' && LABEL_MAP_EN[anno.label]) name = LABEL_MAP_EN[anno.label]; $list.append(`<div class="anno-item" style="border-left-color: ${color}"><strong>${i+1}. ${name}</strong><i class="fa fa-trash remove-btn" onclick="removeAnno(${i})"></i></div>`); }); render(); }
-        window.removeAnno = function(idx) { if(confirm("确定删除？")) { state.annotations.splice(idx, 1); updateSidebar(); } };
-        window.saveToServer = function() { const btn = $('#btn-save-server'); const t = btn.html(); btn.prop('disabled', true).html('保存中...'); $.ajax({ url: "{% url 'labeler:save_api' sample.id %}", type: "POST", data: JSON.stringify({ annotations: state.annotations }), contentType: "application/json", headers: { "X-CSRFToken": "{{ csrf_token }}" }, success: function(res) { if(res.status==='ok') { {% if next_sample %} window.location.href = "{% url 'labeler:annotate' next_sample.id %}"; {% else %} alert("完成！"); window.location.href = "{% url 'labeler:dashboard' %}"; {% endif %} } }, error: function(){ alert("保存失败"); btn.prop('disabled', false).html(t); } }); };
+        function finishPolygon() { 
+            if(state.points.length < 3) { alert("至少需要3个点才能闭合"); return; } 
+            const cx = $(window).width()/2 - 125, cy = $(window).height()/2 - 100; 
+            $('#label-modal').css({left: cx, top: cy}).fadeIn(150); 
+            $('#label-select').focus(); 
+        }
+        function undoPoint() { 
+            if(state.isDrawing && state.points.length > 0) { 
+                state.points.pop(); 
+                if(state.points.length === 0) cancelShape(); 
+                render(); 
+            } 
+        }
+        window.confirmShape = function() { 
+            const code = $('#label-select').val(); 
+            state.annotations.push({ points: [...state.points], label: code }); 
+            cancelShape(); updateSidebar(); 
+        };
+        window.cancelShape = function() { 
+            state.isDrawing = false; state.points = []; 
+            $('#label-modal').hide(); 
+            $('#btn-finish').prop('disabled', true).html('<i class="fas fa-check"></i> 闭合 (Enter)'); 
+            render(); 
+        };
+        function updateSidebar() { 
+            const $list = $('#list-container'); $list.empty(); 
+            if(state.annotations.length === 0) { 
+                $list.html('<div class="text-center text-muted mt-5"><i class="fas fa-pencil-alt fa-2x mb-2"></i><p>暂无标注</p></div>'); 
+                return; 
+            } 
+            state.annotations.forEach((anno, i) => { 
+                const color = COLOR_MAP[anno.label] || '#ccc'; 
+                let name = anno.label; 
+                if (state.lang === 'cn' && LABEL_MAP_CN[anno.label]) name = LABEL_MAP_CN[anno.label]; 
+                else if (state.lang === 'en' && LABEL_MAP_EN[anno.label]) name = LABEL_MAP_EN[anno.label]; 
+                
+                $list.append(`
+                    <div class="anno-item" style="border-left-color: ${color}">
+                        <strong>#${i+1} ${name}</strong>
+                        <i class="fas fa-trash-alt remove-btn" onclick="removeAnno(${i})"></i>
+                    </div>
+                `); 
+            }); 
+            render(); 
+        }
+        window.removeAnno = function(idx) { 
+            if(confirm("确定要删除这条标注吗？")) { state.annotations.splice(idx, 1); updateSidebar(); } 
+        };
+        window.saveToServer = function() { 
+            const btn = $('#btn-save-server'); 
+            const originalText = btn.html(); 
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 保存中...'); 
+            
+            $.ajax({ 
+                url: "{% url 'labeler:save_api' sample.id %}", 
+                type: "POST", 
+                data: JSON.stringify({ annotations: state.annotations }), 
+                contentType: "application/json", 
+                headers: { "X-CSRFToken": "{{ csrf_token }}" }, 
+                success: function(res) { 
+                    if(res.status === 'ok') { 
+                        {% if next_sample %} 
+                            window.location.href = "{% url 'labeler:annotate' next_sample.id %}"; 
+                        {% else %} 
+                            alert("本组任务已全部完成！"); 
+                            window.location.href = "{% url 'labeler:dashboard' %}"; 
+                        {% endif %} 
+                    } 
+                }, 
+                error: function(){ 
+                    alert("保存失败，请检查网络或重试。"); 
+                    btn.prop('disabled', false).html(originalText); 
+                } 
+            }); 
+        };
+        
         function getCenter(pts) { let x=0, y=0; pts.forEach(p=>{x+=p.x; y+=p.y}); return {x:x/pts.length, y:y/pts.length}; }
         function hexToRgba(hex, a) { if(!hex) return `rgba(200,200,200,${a})`; const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16); return `rgba(${r}, ${g}, ${b}, ${a})`; }
     </script>

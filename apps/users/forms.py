@@ -4,38 +4,44 @@ from .models import UserProfile
 
 class RegisterForm(UserCreationForm):
     """
-    自定义注册表单：
-    1. 继承自 Django 原生 UserCreationForm (自动处理密码加密/确认)
-    2. 绑定我们要使用的 UserProfile 模型
-    3. 额外让用户选 'role' (身份)
+    自定义注册表单：适配 AdminLTE 风格
+    包含字段：username, email, role, phone, department
     """
+    # 显式定义字段，添加 Bootstrap 的 form-control 类
+    email = forms.EmailField(
+        label="电子邮箱", 
+        required=True, 
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'example@email.com'})
+    )
+    role = forms.ChoiceField(
+        label="选择身份",
+        choices=UserProfile.ROLE_CHOICES, # 确保你的 Model 里定义了 ROLE_CHOICES，如果没有则手动写 choices=(('labeler','标注员'), ('hospital','医生'))
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    phone = forms.CharField(
+        label="联系电话", 
+        required=False, 
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '可选'})
+    )
+    department = forms.CharField(
+        label="所属科室", 
+        required=False, 
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例如：放射科'})
+    )
+
     class Meta(UserCreationForm.Meta):
         model = UserProfile
-        # 这里定义表单里要显示的字段
-        fields = ('username', 'email', 'role') 
-        
-    # 我们可以给字段加一点样式类 (虽然我们在模板里也会手动写)
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['role'].label = "选择身份"
-        self.fields['email'].required = True
-
-
-    class RegisterForm(UserCreationForm):
-        """
-        自定义注册表单：支持 email, phone, department
-        """
-    email = forms.EmailField(label="电子邮箱", required=True, widget=forms.EmailInput(attrs={'class': 'form-control'}))
-    phone = forms.CharField(label="联系电话", required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
-    department = forms.CharField(label="所属科室", required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例如：放射科'}))
-    
-    class Meta(UserCreationForm.Meta):
-        model = UserProfile
-        # 在这里定义表单中显示的字段顺序
+        # 定义字段顺序，这将决定它们在 HTML 中的渲染顺序
         fields = ('username', 'email', 'role', 'phone', 'department')
-        
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # 统一给所有字段加 Bootstrap 样式
-        for field in self.fields.values():
-            field.widget.attrs.update({'class': 'form-control'})
+        # 兜底操作：确保所有字段都有 form-control 类（适配 Bootstrap 4）
+        for field_name, field in self.fields.items():
+            existing_classes = field.widget.attrs.get('class', '')
+            if 'form-control' not in existing_classes:
+                field.widget.attrs['class'] = existing_classes + ' form-control'
+            
+            # 给用户名输入框也加个 placeholder
+            if field_name == 'username':
+                field.widget.attrs['placeholder'] = '请输入用户名'

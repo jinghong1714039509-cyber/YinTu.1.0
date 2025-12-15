@@ -2,104 +2,121 @@
 {% block title %}任务详情：{{ task.name }}{% endblock %}
 
 {% block content %}
-<div class="right_col" role="main">
-  <div class="page-title">
-    <div class="title_left">
-      <h3>任务: {{ task.name }} <small>共 {{ task.sample_count }} 张</small></h3>
-    </div>
-    
-    <div class="title_right">
-      <div class="pull-right">
-        <a href="{% url 'labeler:download' task.id %}" class="btn btn-success btn-sm" target="_blank">
-          <i class="fa fa-download"></i> 下载图片包
-        </a>
-        <button onclick="$('#uploadModal').show()" class="btn btn-warning btn-sm">
-          <i class="fa fa-upload"></i> 上传离线结果
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div class="clearfix"></div>
-
-  <div class="row">
-    <div class="col-md-12">
-      <div class="x_panel">
-        <div class="x_title">
-          <h2><i class="fa fa-th"></i> 图片列表 <small>点击 "开始标注" 进入在线工作台</small></h2>
-          <div class="clearfix"></div>
-        </div>
-        
-        <div class="x_content">
-          {% for sample in samples %}
-          <div class="col-md-55">
-            <div class="thumbnail" style="height: 100%;">
-              <div class="image view view-first">
-                <img style="width: 100%; display: block;" src="/media/{{ sample.file_path }}" alt="image" />
-                
-                <div class="mask">
-                  <p>{{ sample.original_name }}</p>
-                  <div class="tools tools-bottom">
-                    <a href="{% url 'labeler:annotate' sample.id %}" title="去标注">
-                        <i class="fa fa-pencil"></i> 开始标注
-                    </a>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="caption">
-                <p>
-                    <strong>{{ sample.code }}</strong>
-                    <br>
-                    <span title="{{ sample.original_name }}">{{ sample.original_name|truncatechars:12 }}</span>
-                </p>
-                
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 5px; border-top: 1px solid #eee;">
-                    {% if sample.is_labeled %}
-                        <span class="label label-success"><i class="fa fa-check"></i> 已标</span>
-                    {% else %}
-                        <span class="label label-default" style="background-color: #999;">未标</span>
-                    {% endif %}
-                    
-                    <a href="{% url 'labeler:annotate' sample.id %}" class="btn btn-primary btn-xs" style="margin: 0;">
-                        <i class="fa fa-pencil"></i> 标注
-                    </a>
-                </div>
-              </div>
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>任务详情: {{ task.name }} <small class="text-muted" style="font-size: 14px;">共 {{ task.sample_count }} 张</small></h1>
             </div>
-          </div>
-          {% empty %}
-          <div class="col-md-12 text-center" style="padding: 50px; color: #999;">
-              <h4>暂无样本图片</h4>
-              <p>请等待医生端上传视频并完成处理。</p>
-          </div>
-          {% endfor %}
+            <div class="col-sm-6">
+                <div class="float-sm-right">
+                    <a href="{% url 'labeler:download' task.id %}" class="btn btn-success btn-sm" target="_blank">
+                        <i class="fas fa-download"></i> 下载图片包
+                    </a>
+                    <button onclick="$('#uploadModal').modal('show')" class="btn btn-warning btn-sm">
+                        <i class="fas fa-upload"></i> 上传离线结果
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
-</div>
+</section>
 
-<div id="uploadModal" style="display:none; position:fixed; top:15%; left:50%; margin-left:-20%; width:40%; background:#fff; padding:25px; border-radius: 5px; z-index:9999; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
-    <div style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
-        <button type="button" class="close" onclick="$('#uploadModal').hide()"><span>&times;</span></button>
-        <h4 style="margin:0;"><i class="fa fa-upload"></i> 上传离线标注结果</h4>
+<section class="content">
+    <div class="container-fluid">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-th"></i> 图片列表</h3>
+                <div class="card-tools">
+                    <small class="text-muted">点击 "开始标注" 进入在线工作台</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for sample in samples %}
+                    <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="position-relative" style="height: 180px; overflow: hidden; background: #eee;">
+                                <img src="/media/{{ sample.file_path }}" class="card-img-top" alt="image" style="width: 100%; height: 100%; object-fit: cover;">
+                                <div class="position-absolute w-100 h-100 d-flex align-items-center justify-content-center" 
+                                     style="top:0; left:0; background: rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.3s;"
+                                     onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
+                                    <a href="{% url 'labeler:annotate' sample.id %}" class="btn btn-light btn-sm">
+                                        <i class="fas fa-pencil-alt"></i> 开始标注
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="card-body p-3 d-flex flex-column">
+                                <h6 class="card-title text-truncate w-100" title="{{ sample.original_name }}">{{ sample.original_name }}</h6>
+                                <p class="card-text text-muted text-xs mb-3">ID: {{ sample.code }}</p>
+                                
+                                <div class="mt-auto d-flex justify-content-between align-items-center">
+                                    {% if sample.is_labeled %}
+                                        <span class="badge badge-success"><i class="fas fa-check"></i> 已标</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">未标</span>
+                                    {% endif %}
+                                    
+                                    <a href="{% url 'labeler:annotate' sample.id %}" class="btn btn-outline-primary btn-xs">
+                                        <i class="fas fa-edit"></i> 标注
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-5 text-muted">
+                        <h4>暂无样本图片</h4>
+                        <p>请等待医生端上传视频并完成处理。</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <div class="alert alert-info">
-        <i class="fa fa-info-circle"></i> 提示：上传的 ZIP 包内应包含与图片同名的 JSON 或 XML 文件。
-    </div>
+</section>
 
-    <form action="{% url 'labeler:upload' task.id %}" method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="form-group">
-            <label>选择 ZIP 文件</label>
-            <input type="file" name="annotation_file" required class="form-control" accept=".zip">
+<div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"><i class="fas fa-upload"></i> 上传离线标注结果</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{% url 'labeler:upload' task.id %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 提示：上传的 ZIP 包内应包含与图片同名的 JSON 或 XML 文件。
+                    </div>
+                    <div class="form-group">
+                        <label>选择 ZIP 文件</label>
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" name="annotation_file" id="customFile" required accept=".zip">
+                            <label class="custom-file-label" for="customFile">点击选择文件</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">确认提交</button>
+                </div>
+            </form>
         </div>
-        <div class="text-right" style="margin-top: 20px;">
-            <button type="button" onclick="$('#uploadModal').hide()" class="btn btn-default">取消</button>
-            <button type="submit" class="btn btn-primary">确认提交</button>
-        </div>
-    </form>
+    </div>
 </div>
+{% endblock %}
+
+{% block js %}
+<script>
+    // 让 Custom File Input 显示文件名
+    $(function () {
+        $('.custom-file-input').on('change', function(){
+            var fileName = $(this).val().split('\\').pop();
+            $(this).next('.custom-file-label').addClass("selected").html(fileName);
+        });
+    });
+</script>
 {% endblock %}

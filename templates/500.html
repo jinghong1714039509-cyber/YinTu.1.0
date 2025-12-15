@@ -1,0 +1,18 @@
+{% extends "common/base.html" %}
+
+{% block content %}
+<div class="error-page" style="margin-top: 50px;">
+    <h2 class="headline text-danger">500</h2>
+
+    <div class="error-content">
+        <h3><i class="fas fa-exclamation-triangle text-danger"></i> 服务器出错了。</h3>
+
+        <p>
+            服务器遇到内部错误，无法完成您的请求。
+            请稍后再试，或者联系系统管理员。
+            <br>
+            <a href="/">返回首页</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

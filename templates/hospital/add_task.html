@@ -4,182 +4,136 @@
 
 {% block css %}
 <style>
-    /* === 1. 容器缩小：从 800px 减小到 550px，更精致 === */
-    .form-container-compact {
-        max-width: 550px; 
-        margin: 20px auto; /* 顶部距离也减小 */
-        padding-bottom: 40px;
-    }
-
-    /* === 2. 面板紧凑化 === */
-    .compact-panel {
-        background: #fff;
-        border-radius: 6px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.05); /* 阴影变淡 */
-        border-top: 3px solid #1ABB9C; /* 装饰条变细 */
-        padding: 25px 35px; /* 内边距减小 */
-    }
-
-    /* === 3. 垂直布局：间距缩小 === */
-    .form-group-item {
-        margin-bottom: 15px; /* 间距变紧凑 */
-    }
-    
-    .form-group-item label {
-        font-size: 13px; /* 字体改回标准 */
-        color: #444;
-        font-weight: 600;
-        margin-bottom: 5px;
-        display: block;
-    }
-
-    /* === 4. 输入框：回归标准舒适尺寸 (40px) === */
-    .input-compact {
-        height: 38px; /* 标准高度 */
-        font-size: 14px;
-        border-radius: 3px;
-        border: 1px solid #ccc;
-        box-shadow: inset 0 1px 1px rgba(0,0,0,0.075);
-        width: 100%;
-        padding-left: 10px;
-    }
-    .input-compact:focus {
-        border-color: #1ABB9C;
-        box-shadow: 0 0 5px rgba(26, 187, 156, 0.3);
-    }
-
-    /* === 5. 视频上传区：小巧精致 === */
-    .upload-area-small {
-        margin-top: 20px;
-        border: 2px dashed #1ABB9C;
-        background-color: #f9fcfb;
-        border-radius: 6px;
-        text-align: center;
-        padding: 20px; /* 减小内边距 */
+    /* AdminLTE 风格微调 */
+    .upload-drop-zone {
+        border: 2px dashed #007bff;
+        border-radius: 5px;
+        background: #f4f6f9;
+        transition: all 0.3s;
         cursor: pointer;
-        transition: all 0.2s;
     }
-    .upload-area-small:hover {
-        background-color: #f0f9f6;
+    .upload-drop-zone:hover {
+        background: #e9ecef;
+        border-color: #0056b3;
     }
-    
-    .upload-icon-small {
-        font-size: 32px; /* 图标缩小 */
-        color: #1ABB9C;
-        margin-bottom: 5px;
-    }
-    
-    .upload-hint {
-        font-size: 14px;
-        font-weight: bold;
-        color: #555;
-        margin: 0;
-    }
-    
-    .upload-sub-hint {
-        font-size: 12px;
-        color: #999;
-        margin: 2px 0 0 0;
-    }
-
-    /* 文件名回显 */
-    .file-tag-small {
-        display: inline-block;
-        margin-top: 10px;
-        padding: 4px 12px;
-        background: #1ABB9C;
-        color: white;
-        border-radius: 12px;
-        font-size: 12px;
-        display: none;
+    .upload-drop-zone.active {
+        background: #e8f0fe;
+        border-color: #28a745;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="right_col" role="main">
-    
-    {% if messages %}
-    <div class="row" style="max-width: 550px; margin: 0 auto;">
-        <div class="col-md-12">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade in" style="margin-bottom: 10px; padding: 10px;">
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                <i class="fa fa-info-circle"></i> {{ message }}
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>新建任务</h1>
             </div>
-            {% endfor %}
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="/">首页</a></li>
+                    <li class="breadcrumb-item active">新建</li>
+                </ol>
+            </div>
         </div>
     </div>
-    {% endif %}
+</section>
 
-    <div class="form-container-compact">
+<section class="content">
+    <div class="container-fluid">
         
-        <div class="compact-panel">
-            <div class="text-center" style="margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
-                <h3 style="margin: 0; font-weight: bold; color: #2A3F54; font-size: 20px;">
-                    <i class="fa fa-plus-square" style="color: #1ABB9C;"></i> 新建任务
-                </h3>
-            </div>
-
-            <form id="add-task-form" method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-
-                <div class="form-group-item">
-                    <label for="name">任务/患者名称 <span style="color:red">*</span></label>
-                    <input type="text" id="name" name="name" required class="form-control input-compact" placeholder="请输入名称">
-                </div>
-
-                <div class="form-group-item">
-                    <label for="remark">备注说明</label>
-                    <textarea id="remark" name="remark" class="form-control" rows="2" style="resize: vertical; min-height: 38px; font-size: 14px;" placeholder="可选：填写医嘱或描述"></textarea>
-                </div>
-
-                <div class="form-group-item">
-                    <label>原始视频文件 <span style="color:red">*</span></label>
-                    
-                    <input type="file" id="video_file" name="video_file" required accept="video/*" style="display: none;">
-                    
-                    <div class="upload-area-small" onclick="$('#video_file').click();">
-                        <i class="fa fa-cloud-upload upload-icon-small"></i>
-                        <p class="upload-hint">点击选择视频</p>
-                        <p class="upload-sub-hint">支持 MP4, AVI (后台抽帧)</p>
-                        
-                        <div id="file-name-box" class="file-tag-small"></div>
-                    </div>
-                </div>
-
-                <div class="form-group-item" style="margin-top: 15px; border-top: 1px dashed #eee; padding-top: 15px;">
-                    <label style="font-weight: normal; color: #777;">病例附件资料 (可选)</label>
-                    <input type="file" name="patient_file" style="font-size: 12px;">
-                </div>
-
-                <div class="text-center" style="margin-top: 30px;">
-                    <a href="{% url 'hospital:index' %}" class="btn btn-default btn-sm" style="margin-right: 10px; width: 80px;">取消</a>
-                    <button type="submit" id="submit-btn" class="btn btn-success btn-sm" style="width: 120px; font-weight: bold;">
-                        <i class="fa fa-check"></i> 提交任务
+        {% if messages %}
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-info-circle mr-1"></i> {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
 
-            </form>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card card-primary card-outline">
+                    <div class="card-header text-center">
+                        <h3 class="card-title" style="float: none; font-weight: bold;">
+                            <i class="fas fa-plus-square text-primary mr-1"></i> 创建新病例任务
+                        </h3>
+                    </div>
+                    
+                    <form id="add-task-form" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="card-body">
+                            
+                            <div class="form-group">
+                                <label for="name">任务/患者名称 <span class="text-danger">*</span></label>
+                                <input type="text" id="name" name="name" required class="form-control" placeholder="请输入名称">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="remark">备注说明</label>
+                                <textarea id="remark" name="remark" class="form-control" rows="3" placeholder="可选：填写医嘱或描述"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>原始视频文件 <span class="text-danger">*</span></label>
+                                <input type="file" id="video_file" name="video_file" required accept="video/*" style="display: none;">
+                                
+                                <div class="upload-drop-zone p-4 text-center" onclick="$('#video_file').click();">
+                                    <div class="upload-icon mb-2">
+                                        <i class="fas fa-cloud-upload-alt fa-3x text-primary"></i>
+                                    </div>
+                                    <h6 class="text-dark font-weight-bold" id="upload-text">点击选择视频文件</h6>
+                                    <p class="text-muted small mb-0">支持 MP4, AVI (后台自动抽帧)</p>
+                                    <span id="file-name-tag" class="badge badge-success mt-2" style="display: none;"></span>
+                                </div>
+                            </div>
+
+                            <div class="form-group mt-4 pt-3 border-top">
+                                <label class="font-weight-normal text-muted small">其他附件 (可选)</label>
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" name="patient_file" id="patientFile">
+                                    <label class="custom-file-label" for="patientFile">选择文件</label>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="card-footer text-center bg-white">
+                            <a href="{% url 'hospital:index' %}" class="btn btn-default mr-2">取消</a>
+                            <button type="submit" id="submit-btn" class="btn btn-primary px-4">
+                                <i class="fas fa-check mr-1"></i> 提交任务
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
-</div>
+</section>
 {% endblock %}
 
 {% block js %}
+<script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
 <script>
     $(function() {
+        bsCustomFileInput.init();
+
         // 视频文件回显
         $('#video_file').on('change', function() {
             var fileName = $(this).val().split('\\').pop();
             if(fileName) {
-                var $box = $('.upload-area-small');
-                // 变绿提示
-                $box.css({'background-color': '#e6fffa', 'border-style': 'solid'});
-                $box.find('.upload-icon-small').removeClass('fa-cloud-upload').addClass('fa-file-video-o');
-                $box.find('.upload-hint').text('已选择视频');
-                
-                $('#file-name-box').html(fileName).fadeIn();
+                var $zone = $('.upload-drop-zone');
+                $zone.addClass('active');
+                $zone.find('.fa-cloud-upload-alt').removeClass('fa-cloud-upload-alt').addClass('fa-file-video');
+                $('#upload-text').text('已选择视频');
+                $('#file-name-tag').text(fileName).show();
             }
         });
 
@@ -191,7 +145,7 @@
             }
             var btn = $('#submit-btn');
             btn.prop('disabled', true);
-            btn.html('<i class="fa fa-spinner fa-spin"></i> 处理中...');
+            btn.html('<i class="fas fa-spinner fa-spin"></i> 处理中...');
         });
     });
 </script>
