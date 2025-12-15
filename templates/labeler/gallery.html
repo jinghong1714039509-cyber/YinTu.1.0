@@ -1,22 +1,74 @@
 {% extends "base_site.html" %}
-{% block title %}任务详情：{{ task.name }}{% endblock %}
+{% block title %}图片库：{{ task.name }}{% endblock %}
+
+{% block css %}
+<style>
+    /* 顶部工具栏 */
+    .gallery-header {
+        background: #fff; padding: 16px 24px; border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02); margin-bottom: 24px;
+        border: 1px solid #f3f4f6;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+
+    /* 图片卡片 */
+    .img-card {
+        background: #fff; border-radius: 12px; overflow: hidden;
+        border: 1px solid #e5e7eb; position: relative;
+        transition: all 0.2s ease;
+    }
+    .img-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-color: #3b82f6; }
+    
+    .img-wrapper {
+        height: 180px; width: 100%; position: relative; background: #f3f4f6;
+        overflow: hidden;
+    }
+    .img-obj { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+    .img-card:hover .img-obj { transform: scale(1.05); }
+
+    /* 悬浮遮罩 */
+    .img-overlay {
+        position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.4);
+        display: flex; justify-content: center; align-items: center;
+        opacity: 0; transition: opacity 0.2s;
+    }
+    .img-card:hover .img-overlay { opacity: 1; }
+
+    /* 状态角标 */
+    .status-badge {
+        position: absolute; top: 8px; right: 8px;
+        padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;
+        background: rgba(0,0,0,0.6); color: #fff; backdrop-filter: blur(4px);
+    }
+    .status-labeled { background: #10b981; color: #fff; }
+    
+    .card-footer-info {
+        padding: 10px 15px; background: #fff;
+    }
+    .img-name { font-size: 13px; font-weight: 500; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .img-id { font-size: 11px; color: #9ca3af; }
+</style>
+{% endblock %}
 
 {% block content %}
 <section class="content-header">
     <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h1>任务详情: {{ task.name }} <small class="text-muted" style="font-size: 14px;">共 {{ task.sample_count }} 张</small></h1>
+        <div class="gallery-header">
+            <div>
+                <h1 class="font-weight-bold m-0 text-dark" style="font-size: 20px;">
+                    <a href="{% url 'labeler:dashboard' %}" class="text-muted mr-2"><i class="fas fa-arrow-left"></i></a>
+                    {{ task.name }}
+                </h1>
+                <small class="text-muted ml-4">共 {{ task.sample_count }} 张样本</small>
             </div>
-            <div class="col-sm-6">
-                <div class="float-sm-right">
-                    <a href="{% url 'labeler:download' task.id %}" class="btn btn-success btn-sm" target="_blank">
-                        <i class="fas fa-download"></i> 下载图片包
-                    </a>
-                    <button onclick="$('#uploadModal').modal('show')" class="btn btn-warning btn-sm">
-                        <i class="fas fa-upload"></i> 上传离线结果
-                    </button>
-                </div>
+            <div class="btn-group">
+                <a href="{% url 'labeler:download' task.id %}" class="btn btn-outline-success btn-sm font-weight-bold" target="_blank">
+                    <i class="fas fa-download mr-1"></i> 下载数据集
+                </a>
+                <button onclick="$('#uploadModal').modal('show')" class="btn btn-outline-warning btn-sm font-weight-bold">
+                    <i class="fas fa-upload mr-1"></i> 上传结果
+                </button>
             </div>
         </div>
     </div>
@@ -24,63 +76,45 @@
 
 <section class="content">
     <div class="container-fluid">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-th"></i> 图片列表</h3>
-                <div class="card-tools">
-                    <small class="text-muted">点击 "开始标注" 进入在线工作台</small>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    {% for sample in samples %}
-                    <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
-                        <div class="card h-100 shadow-sm">
-                            <div class="position-relative" style="height: 180px; overflow: hidden; background: #eee;">
-                                <img src="/media/{{ sample.file_path }}" class="card-img-top" alt="image" style="width: 100%; height: 100%; object-fit: cover;">
-                                <div class="position-absolute w-100 h-100 d-flex align-items-center justify-content-center" 
-                                     style="top:0; left:0; background: rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.3s;"
-                                     onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
-                                    <a href="{% url 'labeler:annotate' sample.id %}" class="btn btn-light btn-sm">
-                                        <i class="fas fa-pencil-alt"></i> 开始标注
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="card-body p-3 d-flex flex-column">
-                                <h6 class="card-title text-truncate w-100" title="{{ sample.original_name }}">{{ sample.original_name }}</h6>
-                                <p class="card-text text-muted text-xs mb-3">ID: {{ sample.code }}</p>
-                                
-                                <div class="mt-auto d-flex justify-content-between align-items-center">
-                                    {% if sample.is_labeled %}
-                                        <span class="badge badge-success"><i class="fas fa-check"></i> 已标</span>
-                                    {% else %}
-                                        <span class="badge badge-secondary">未标</span>
-                                    {% endif %}
-                                    
-                                    <a href="{% url 'labeler:annotate' sample.id %}" class="btn btn-outline-primary btn-xs">
-                                        <i class="fas fa-edit"></i> 标注
-                                    </a>
-                                </div>
-                            </div>
+        <div class="row">
+            {% for sample in samples %}
+            <div class="col-6 col-md-4 col-lg-3 col-xl-2 mb-4">
+                <div class="img-card">
+                    <div class="img-wrapper">
+                        <img src="/media/{{ sample.file_path }}" class="img-obj" loading="lazy">
+                        
+                        {% if sample.is_labeled %}
+                            <div class="status-badge status-labeled"><i class="fas fa-check mr-1"></i> 已标</div>
+                        {% else %}
+                            <div class="status-badge">未标</div>
+                        {% endif %}
+
+                        <div class="img-overlay">
+                            <a href="{% url 'labeler:annotate' sample.id %}" class="btn btn-primary btn-sm rounded-pill px-3 shadow">
+                                <i class="fas fa-pen mr-1"></i> 标注
+                            </a>
                         </div>
                     </div>
-                    {% empty %}
-                    <div class="col-12 text-center py-5 text-muted">
-                        <h4>暂无样本图片</h4>
-                        <p>请等待医生端上传视频并完成处理。</p>
+                    <div class="card-footer-info">
+                        <div class="img-name" title="{{ sample.original_name }}">{{ sample.original_name }}</div>
+                        <div class="img-id">ID: {{ sample.code|slice:"-6:" }}</div>
                     </div>
-                    {% endfor %}
                 </div>
             </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <p class="text-muted">该任务下暂无图片数据。</p>
+            </div>
+            {% endfor %}
         </div>
     </div>
 </section>
 
-<div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title"><i class="fas fa-upload"></i> 上传离线标注结果</h4>
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title font-weight-bold">上传标注数据</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -88,20 +122,13 @@
             <form action="{% url 'labeler:upload' task.id %}" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> 提示：上传的 ZIP 包内应包含与图片同名的 JSON 或 XML 文件。
-                    </div>
-                    <div class="form-group">
-                        <label>选择 ZIP 文件</label>
-                        <div class="custom-file">
-                            <input type="file" class="custom-file-input" name="annotation_file" id="customFile" required accept=".zip">
-                            <label class="custom-file-label" for="customFile">点击选择文件</label>
-                        </div>
+                    <div class="custom-file mt-2">
+                        <input type="file" class="custom-file-input" name="annotation_file" id="customFile" required accept=".zip">
+                        <label class="custom-file-label rounded-lg" for="customFile">选择 ZIP 文件...</label>
                     </div>
                 </div>
-                <div class="modal-footer justify-content-between">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
-                    <button type="submit" class="btn btn-primary">确认提交</button>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="submit" class="btn btn-primary rounded-lg px-4">提交</button>
                 </div>
             </form>
         </div>
@@ -110,13 +137,8 @@
 {% endblock %}
 
 {% block js %}
+<script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
 <script>
-    // 让 Custom File Input 显示文件名
-    $(function () {
-        $('.custom-file-input').on('change', function(){
-            var fileName = $(this).val().split('\\').pop();
-            $(this).next('.custom-file-label').addClass("selected").html(fileName);
-        });
-    });
+    $(function () { bsCustomFileInput.init(); });
 </script>
 {% endblock %}

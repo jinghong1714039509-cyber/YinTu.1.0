@@ -3,100 +3,183 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>注册 | 医疗数据平台</title>
-
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <title>注册 | YinTu Medical</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/icheck-bootstrap/3.0.1/icheck-bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #fff; height: 100vh; }
+        .split-screen { display: flex; height: 100%; min-height: 100vh; }
+        
+        /* === 左侧：与登录页保持一致的专业风格 === */
+        .left-pane {
+            flex: 40%;
+            /* 保持一致的背景图，增加统一感 */
+            background: url('https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80') no-repeat center center;
+            background-size: cover;
+            position: relative;
+            display: none;
+        }
+        .left-pane::before {
+            content: "";
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.9) 0%, rgba(59, 130, 246, 0.85) 100%);
+        }
+        .brand-text {
+            position: relative; z-index: 2; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: #fff; text-align: center; padding: 2rem;
+        }
+        .brand-logo-text { font-size: 3.5rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 1rem; }
+        .brand-desc { font-size: 1.2rem; opacity: 0.8; font-weight: 300; max-width: 300px; line-height: 1.6; }
+
+        /* === 右侧：注册表单 === */
+        .right-pane {
+            flex: 60%;
+            overflow-y: auto; /* 允许小屏幕滚动 */
+            display: flex; justify-content: center; align-items: center;
+            padding: 3rem 1rem;
+        }
+        .register-box { width: 100%; max-width: 500px; }
+
+        /* 输入框复用 */
+        .input-group-modern { position: relative; margin-bottom: 1.2rem; }
+        .input-group-modern .icon {
+            position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+            color: #9ca3af; pointer-events: none;
+        }
+        .form-control-modern {
+            width: 100%; height: 50px; padding-left: 50px; padding-right: 15px;
+            border: 2px solid #f3f4f6; background-color: #f9fafb; border-radius: 10px;
+            outline: none; transition: all 0.3s;
+        }
+        .form-control-modern:focus { border-color: #3b82f6; background: #fff; }
+        
+        /* 角色选择卡片 */
+        .role-selector { display: flex; gap: 15px; margin-bottom: 1.5rem; }
+        .role-option {
+            flex: 1; border: 2px solid #f3f4f6; border-radius: 12px;
+            padding: 15px; cursor: pointer; text-align: center; transition: all 0.2s;
+            background: #fff; color: #6b7280;
+        }
+        .role-option:hover { border-color: #bfdbfe; background: #eff6ff; }
+        .role-radio { display: none; }
+        
+        /* 选中状态 */
+        .role-radio:checked + .role-option {
+            border-color: #3b82f6; background-color: #eff6ff; color: #2563eb;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+        }
+        
+        .btn-brand {
+            width: 100%; height: 50px; background: #3b82f6; border: none; border-radius: 10px;
+            color: #fff; font-weight: 600; font-size: 1rem; margin-top: 1rem;
+            transition: all 0.2s; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        }
+        .btn-brand:hover { background: #2563eb; transform: translateY(-2px); }
+
+        @media (max-width: 992px) {
+            .left-pane { display: none; }
+            .right-pane { flex: 100%; }
+        }
+        @media (min-width: 992px) { .left-pane { display: block; } }
+    </style>
 </head>
-<body class="hold-transition register-page">
-<div class="register-box">
-    <div class="register-logo">
-        <a href="/"><b>YinTu</b> Medical</a>
+<body>
+
+<div class="split-screen">
+    <div class="left-pane">
+        <div class="brand-text">
+            <h1 class="brand-logo-text">YinTu</h1>
+            <div style="width: 50px; height: 4px; background: #fff; margin: 0 auto 1.5rem auto; border-radius: 2px; opacity: 0.5;"></div>
+            <p class="brand-desc">加入专业医疗团队<br>开启高效数据协作</p>
+        </div>
     </div>
 
-    <div class="card">
-        <div class="card-body register-card-body">
-            <p class="login-box-msg">申请加入协作平台</p>
+    <div class="right-pane">
+        <div class="register-box">
+            <div class="mb-4">
+                <h2 class="font-weight-bold">创建新账号</h2>
+                <p class="text-muted">已有账号？ <a href="{% url 'users:login' %}" class="font-weight-bold text-primary">直接登录</a></p>
+            </div>
 
             {% if messages %}
                 {% for message in messages %}
-                <div class="alert alert-danger">
-                    {{ message }}
-                </div>
+                <div class="alert alert-danger text-center shadow-sm border-0">{{ message }}</div>
                 {% endfor %}
             {% endif %}
 
             <form action="{% url 'users:register' %}" method="post">
                 {% csrf_token %}
                 
-                <div class="input-group mb-3">
-                    <input type="text" name="username" class="form-control" placeholder="用户名" required>
-                    <div class="input-group-append">
-                        <div class="input-group-text">
-                            <span class="fas fa-user"></span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="input-group mb-3">
-                    <input type="email" name="email" class="form-control" placeholder="电子邮箱" required>
-                    <div class="input-group-append">
-                        <div class="input-group-text">
-                            <span class="fas fa-envelope"></span>
-                        </div>
-                    </div>
+                <label class="text-muted small font-weight-bold mb-2">选择身份</label>
+                <div class="role-selector">
+                    <input type="radio" name="role" id="role_labeler" value="labeler" class="role-radio" checked>
+                    <label for="role_labeler" class="role-option">
+                        <i class="fas fa-pen-nib fa-2x mb-2 d-block"></i>
+                        <span class="font-weight-bold">标注员</span>
+                    </label>
+
+                    <input type="radio" name="role" id="role_hospital" value="hospital" class="role-radio">
+                    <label for="role_hospital" class="role-option">
+                        <i class="fas fa-user-md fa-2x mb-2 d-block"></i>
+                        <span class="font-weight-bold">医生/专家</span>
+                    </label>
                 </div>
 
-                <div class="form-group mb-3">
-                    <select name="role" class="form-control">
-                        <option value="labeler">我是标注员 </option>
-                        <option value="hospital">我是医生 </option>
-                    </select>
-                </div>
-
-                <div class="input-group mb-3">
-                    <input type="password" name="password1" class="form-control" placeholder="密码" required>
-                    <div class="input-group-append">
-                        <div class="input-group-text">
-                            <span class="fas fa-lock"></span>
-                        </div>
-                    </div>
+                <div class="input-group-modern">
+                    <input type="text" name="username" class="form-control-modern" placeholder="用户名" required>
+                    <i class="fas fa-user icon"></i>
                 </div>
                 
-                <div class="input-group mb-3">
-                    <input type="password" name="password2" class="form-control" placeholder="确认密码" required>
-                    <div class="input-group-append">
-                        <div class="input-group-text">
-                            <span class="fas fa-lock"></span>
+                <div class="input-group-modern">
+                    <input type="email" name="email" class="form-control-modern" placeholder="电子邮箱" required>
+                    <i class="fas fa-envelope icon"></i>
+                </div>
+
+                <div class="row">
+                    <div class="col-6">
+                        <div class="input-group-modern">
+                            <input type="password" name="password1" class="form-control-modern" placeholder="密码" required>
+                            <i class="fas fa-lock icon"></i>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="input-group-modern">
+                            <input type="password" name="password2" class="form-control-modern" placeholder="确认密码" required>
+                            <i class="fas fa-check-circle icon"></i>
                         </div>
                     </div>
                 </div>
 
                 <div class="row">
-                    <div class="col-8">
-                        <div class="icheck-primary">
-                            <input type="checkbox" id="agreeTerms" name="terms" value="agree" required>
-                            <label for="agreeTerms">
-                             同意 <a href="#">服务条款</a>
-                            </label>
+                    <div class="col-6">
+                         <div class="input-group-modern">
+                            <input type="text" name="phone" class="form-control-modern" placeholder="电话 (选填)">
+                            <i class="fas fa-phone icon"></i>
                         </div>
                     </div>
-                    <div class="col-4">
-                        <button type="submit" class="btn btn-primary btn-block">注册</button>
+                    <div class="col-6">
+                        <div class="input-group-modern">
+                            <input type="text" name="department" class="form-control-modern" placeholder="科室 (选填)">
+                            <i class="fas fa-building icon"></i>
+                        </div>
                     </div>
-                    </div>
-            </form>
+                </div>
 
-            <div class="social-auth-links text-center">
-                <p>- OR -</p>
-                <a href="{% url 'users:login' %}" class="text-center">我已经有账号了</a>
-            </div>
+                <div class="custom-control custom-checkbox my-3">
+                    <input type="checkbox" class="custom-control-input" id="terms" required>
+                    <label class="custom-control-label text-muted small" for="terms">
+                        我已阅读并同意 <a href="#">服务条款</a> 和 <a href="#">隐私政策</a>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-brand">完成注册</button>
+            </form>
         </div>
-        </div></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+    </div>
+</div>
+
 </body>
 </html>

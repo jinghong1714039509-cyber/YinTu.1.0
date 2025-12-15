@@ -1,31 +1,116 @@
 {% extends "base_site.html" %}
 {% load static %}
 
-{% block title %}用户与权限管理{% endblock %}
+{% block title %}用户管理 | 系统设置{% endblock %}
 
 {% block css %}
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
         [v-cloak] { display: none !important; }
-        .user-avatar-text {
-            width: 40px; height: 40px; line-height: 40px;
-            text-align: center; background: #f4f6f9; color: #6c757d;
-            border-radius: 50%; font-weight: bold; font-size: 18px;
+        
+        /* 顶部统计条 */
+        .stat-strip {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            border: 1px solid #f3f4f6;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        .stat-item { text-align: center; position: relative; width: 100%; }
+        .stat-item:not(:last-child)::after {
+            content: ""; position: absolute; right: 0; top: 10%; height: 80%; width: 1px; background: #f3f4f6;
+        }
+        .stat-label { color: #6b7280; font-size: 13px; margin-bottom: 4px; }
+        .stat-num { font-size: 24px; font-weight: 700; color: #111827; }
+
+        /* 搜索栏美化 */
+        .search-wrapper {
+            position: relative;
+            max-width: 300px;
+        }
+        .search-input {
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            padding-left: 40px;
+            height: 40px;
+            font-size: 14px;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        .search-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); outline: none; }
+        .search-icon { position: absolute; left: 12px; top: 12px; color: #9ca3af; font-size: 14px; }
+
+        /* 表格样式 */
+        .table-card {
+            background: #fff; border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            border: 1px solid #f3f4f6;
+            overflow: hidden;
+        }
+        .custom-table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #4b5563;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px;
+        }
+        .custom-table td {
+            vertical-align: middle;
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+            color: #1f2937;
+            font-size: 14px;
+        }
+        .custom-table tr:last-child td { border-bottom: none; }
+        .custom-table tr:hover { background-color: #fcfcfd; }
+
+        /* 头像与状态 */
+        .avatar-circle {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: #eff6ff; color: #3b82f6;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 16px;
+            margin-right: 12px;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .status-dot {
-            width: 10px; height: 10px; background-color: #28a745;
-            border-radius: 50%; display: inline-block; margin-left: 5px;
-            box-shadow: 0 0 0 2px #fff;
+            width: 8px; height: 8px; border-radius: 50%;
+            display: inline-block; margin-right: 6px;
         }
+        .dot-online { background: #10b981; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
+        .dot-offline { background: #d1d5db; }
+
+        /* 角色标签 */
+        .role-badge {
+            padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;
+        }
+        .role-admin { background: #fee2e2; color: #991b1b; }
+        .role-doctor { background: #ecfdf5; color: #065f46; }
+        .role-labeler { background: #eff6ff; color: #1e40af; }
     </style>
 {% endblock %}
 
 {% block content %}
 <section class="content-header">
     <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h1>用户账户管理</h1>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="font-weight-bold text-dark" style="font-size: 24px;">账户管理</h1>
+                <p class="text-muted small mb-0">管理系统内的医生、标注员及管理员账号。</p>
+            </div>
+            <div>
+                <a href="{% url 'users:register' %}" class="btn btn-primary shadow-sm px-4">
+                    <i class="fas fa-plus mr-2"></i> 新增用户
+                </a>
             </div>
         </div>
     </div>
@@ -34,105 +119,100 @@
 <section class="content" id="app" v-cloak>
     <div class="container-fluid">
         
-        <div class="row">
-            <div class="col-12 col-sm-6 col-md-3">
-                <div class="info-box">
-                    <span class="info-box-icon bg-info elevation-1"><i class="fas fa-users"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">总账号数</span>
-                        <span class="info-box-number">{{ stats.total }}</span>
-                    </div>
-                </div>
+        <div class="stat-strip">
+            <div class="stat-item">
+                <div class="stat-label">总账号数</div>
+                <div class="stat-num">[[ stats.total ]]</div>
             </div>
-            <div class="col-12 col-sm-6 col-md-3">
-                <div class="info-box mb-3">
-                    <span class="info-box-icon bg-success elevation-1"><i class="fas fa-user-md"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">医生/医院</span>
-                        <span class="info-box-number">{{ stats.doctors }}</span>
-                    </div>
-                </div>
+            <div class="stat-item">
+                <div class="stat-label text-success">医生/医院</div>
+                <div class="stat-num text-success">[[ stats.doctors ]]</div>
             </div>
-            <div class="col-12 col-sm-6 col-md-3">
-                <div class="info-box mb-3">
-                    <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-pen-nib"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">标注员</span>
-                        <span class="info-box-number">{{ stats.labelers }}</span>
-                    </div>
-                </div>
+            <div class="stat-item">
+                <div class="stat-label text-primary">标注员</div>
+                <div class="stat-num text-primary">[[ stats.labelers ]]</div>
             </div>
-            <div class="col-12 col-sm-6 col-md-3">
-                <div class="info-box mb-3">
-                    <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-user-shield"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">管理员</span>
-                        <span class="info-box-number">{{ stats.admins }}</span>
-                    </div>
-                </div>
+            <div class="stat-item">
+                <div class="stat-label text-danger">管理员</div>
+                <div class="stat-num text-danger">[[ stats.admins ]]</div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header border-0">
-                <h3 class="card-title">用户列表</h3>
-                <div class="card-tools">
-                    <form method="GET" action="." class="input-group input-group-sm" style="width: 250px;">
-                        <input type="text" name="q" class="form-control float-right" placeholder="搜索用户..." value="{{ search_query }}">
-                        <div class="input-group-append">
-                            <button type="submit" class="btn btn-default"><i class="fas fa-search"></i></button>
-                            <a href="{% url 'users:register' %}" class="btn btn-success"><i class="fas fa-plus"></i> 新增</a>
-                        </div>
-                    </form>
-                </div>
+        <div class="table-card">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-white">
+                <h3 class="card-title font-weight-bold m-0 text-dark" style="font-size: 16px;">
+                    <i class="fas fa-list-ul mr-2 text-muted"></i> 用户名录
+                </h3>
+                <form method="GET" action="." class="search-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" name="q" class="search-input" placeholder="搜索用户名 / 邮箱..." value="{{ search_query }}">
+                </form>
             </div>
             
-            <div class="card-body table-responsive p-0">
-                <table class="table table-hover text-nowrap">
+            <div class="table-responsive">
+                <table class="table custom-table mb-0">
                     <thead>
                         <tr>
-                            <th>用户 / 状态</th>
-                            <th>角色 & 部门</th>
+                            <th>用户</th>
+                            <th>角色权限</th>
                             <th>联系方式</th>
-                            <th>最后活跃</th>
-                            <th class="text-right">操作</th>
+                            <th>状态 / 最后活跃</th>
+                            <th class="text-right">管理操作</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="user in users" :key="user.id">
                             <td>
                                 <div class="d-flex align-items-center">
-                                    <div class="user-avatar-text mr-2">
+                                    <div class="avatar-circle">
                                         [[ user.name.charAt(0).toUpperCase() ]]
                                     </div>
                                     <div>
-                                        <div class="font-weight-bold">
-                                            [[ user.name ]]
-                                            <span v-if="user.isOnline" class="status-dot" title="在线"></span>
-                                        </div>
-                                        <small class="text-muted">ID: [[ user.id ]]</small>
-                                        <span v-if="user.isSuperuser" class="badge badge-danger ml-1">管理员</span>
-                                        <span v-if="!user.isActive" class="badge badge-secondary ml-1">封禁</span>
+                                        <div class="font-weight-bold text-dark">[[ user.name ]]</div>
+                                        <div class="small text-muted">ID: #[[ user.id ]]</div>
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                [[ user.roleName ]] <br>
-                                <small class="text-muted">[[ user.department ]]</small>
+                                <span :class="['role-badge', getRoleClass(user)]">
+                                    [[ user.roleName ]]
+                                </span>
+                                <div class="small text-muted mt-1" v-if="user.department">
+                                    <i class="far fa-building mr-1"></i> [[ user.department ]]
+                                </div>
                             </td>
                             <td>
-                                <div class="text-sm">[[ user.email ]]</div>
-                                <small class="text-muted">[[ user.phone ]]</small>
+                                <div class="text-dark">[[ user.email ]]</div>
+                                <div class="small text-muted">[[ user.phone || '未填写电话' ]]</div>
                             </td>
-                            <td>[[ user.lastActive ]]</td>
+                            <td>
+                                <div class="d-flex align-items-center mb-1">
+                                    <span :class="['status-dot', user.isOnline ? 'dot-online' : 'dot-offline']"></span>
+                                    <span class="small font-weight-bold" :class="user.isOnline ? 'text-success' : 'text-muted'">
+                                        [[ user.isOnline ? '在线' : '离线' ]]
+                                    </span>
+                                </div>
+                                <div class="small text-muted">[[ user.lastActive ]]</div>
+                            </td>
                             <td class="text-right">
                                 <div v-if="!user.isSuperuser" class="btn-group">
-                                    <a :href="user.resetUrl" onclick="return confirm('重置密码为 123456？')" class="btn btn-sm btn-outline-warning">
-                                        <i class="fas fa-key"></i> 重置
+                                    <a :href="user.resetUrl" onclick="return confirm('确定将密码重置为 123456 吗？')" 
+                                       class="btn btn-sm btn-outline-warning" title="重置密码">
+                                        <i class="fas fa-key"></i>
                                     </a>
-                                    <a :href="user.deleteUrl" onclick="return confirm('确定删除？')" class="btn btn-sm btn-outline-danger">
-                                        <i class="fas fa-trash"></i>
+                                    <a :href="user.deleteUrl" onclick="return confirm('确定删除该用户？此操作不可恢复！')" 
+                                       class="btn btn-sm btn-outline-danger" title="删除用户">
+                                        <i class="fas fa-trash-alt"></i>
                                     </a>
+                                </div>
+                                <span v-else class="text-muted small italic">不可操作</span>
+                            </td>
+                        </tr>
+                        <tr v-if="users.length === 0">
+                            <td colspan="5" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="far fa-folder-open fa-3x mb-3 text-light"></i>
+                                    <p>未找到符合条件的用户</p>
                                 </div>
                             </td>
                         </tr>
@@ -141,28 +221,24 @@
             </div>
 
             {% if page_obj.has_other_pages %}
-            <div class="card-footer clearfix">
-                <ul class="pagination pagination-sm m-0 float-right">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}">«</a></li>
-                    {% else %}
-                        <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
-                    {% endif %}
-                    
-                    <li class="page-item disabled"><a class="page-link" href="#">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</a></li>
-
-                    {% if page_obj.has_next %}
-                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query }}">»</a></li>
-                    {% else %}
-                        <li class="page-item disabled"><a class="page-link" href="#">»</a></li>
-                    {% endif %}
-                </ul>
+            <div class="bg-light p-3 border-top">
+                <nav>
+                    <ul class="pagination pagination-sm justify-content-end m-0">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item"><a class="page-link border-0 rounded mx-1 shadow-sm" href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}">«</a></li>
+                        {% endif %}
+                        <li class="page-item active"><span class="page-link border-0 rounded mx-1 shadow-sm bg-white text-primary font-weight-bold">{{ page_obj.number }}</span></li>
+                        {% if page_obj.has_next %}
+                            <li class="page-item"><a class="page-link border-0 rounded mx-1 shadow-sm" href="?page={{ page_obj.next_page_number }}&q={{ search_query }}">»</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
             </div>
             {% endif %}
         </div>
         
-        <div class="text-center text-muted mt-3">
-            <small><i class="fas fa-sync fa-spin"></i> 数据实时同步 | 最后更新: <span id="sync-time">--:--:--</span></small>
+        <div class="text-center text-muted mt-3 mb-5">
+            <small><i class="fas fa-sync fa-spin mr-1"></i> 数据实时同步 | 列表刷新时间: <span id="sync-time">--:--:--</span></small>
         </div>
 
     </div>
@@ -182,9 +258,10 @@
                         id: "{{ u.id }}", 
                         name: "{{ u.username|escapejs }}", 
                         email: "{{ u.email|default:'-'|escapejs }}", 
-                        roleName: "{% if u.is_superuser %}管理员{% elif u.role == 'hospital' %}医生{% else %}标注员{% endif %}",
+                        roleName: "{% if u.is_superuser %}超级管理员{% elif u.role == 'hospital' %}医生{% else %}标注员{% endif %}",
+                        rawRole: "{% if u.is_superuser %}admin{% else %}{{ u.role }}{% endif %}",
                         department: "{{ u.department|default:''|escapejs }}",
-                        phone: "{{ u.phone|default:'-'|escapejs }}",
+                        phone: "{{ u.phone|default:''|escapejs }}",
                         isOnline: {{ u.is_online_real|yesno:"true,false" }}, 
                         isActive: {{ u.is_active|yesno:"true,false" }},
                         isSuperuser: {{ u.is_superuser|yesno:"true,false" }},
@@ -194,6 +271,20 @@
                     },
                     {% endfor %}
                 ]);
+                
+                // 将后端传来的 stats 字典转为响应式对象
+                const stats = ref({
+                    total: {{ stats.total }},
+                    doctors: {{ stats.doctors }},
+                    labelers: {{ stats.labelers }},
+                    admins: {{ stats.admins }}
+                });
+
+                const getRoleClass = (user) => {
+                    if (user.isSuperuser) return 'role-admin';
+                    if (user.rawRole === 'hospital') return 'role-doctor';
+                    return 'role-labeler';
+                };
 
                 onMounted(() => {
                     const updateTime = () => {
@@ -204,7 +295,7 @@
                     setInterval(updateTime, 1000);
                 });
 
-                return { users };
+                return { users, stats, getRoleClass };
             }
         }).mount('#app');
     </script>

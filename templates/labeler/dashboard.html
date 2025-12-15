@@ -1,13 +1,58 @@
 {% extends "base_site.html" %}
-{% block title %}标注工作台{% endblock %}
+{% block title %}任务大厅 | 标注工作台{% endblock %}
+
+{% block css %}
+<style>
+    /* 任务卡片复用医生端风格，但针对标注员微调 */
+    .task-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        border: 1px solid #f3f4f6;
+        transition: all 0.3s ease;
+        height: 100%;
+        display: flex; flex-direction: column;
+        overflow: hidden;
+    }
+    .task-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.1);
+        border-color: #e5e7eb;
+    }
+
+    .status-bar { height: 4px; width: 100%; }
+    .status-active { background: #3b82f6; }
+    .status-done { background: #10b981; }
+
+    .card-content { padding: 20px; flex: 1; }
+    .task-title {
+        font-size: 16px; font-weight: 700; color: #1f2937; margin-bottom: 8px;
+        display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .task-info { font-size: 13px; color: #6b7280; margin-bottom: 16px; display: flex; justify-content: space-between; }
+    
+    .stats-grid {
+        display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+        background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 16px;
+    }
+    .stat-box { text-align: center; }
+    .stat-val { font-size: 16px; font-weight: 700; display: block; line-height: 1.2; }
+    .stat-key { font-size: 11px; color: #9ca3af; text-transform: uppercase; }
+
+    .card-actions {
+        padding: 12px 20px; border-top: 1px solid #f3f4f6; background: #fafafa;
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;
+    }
+    .btn-action { font-size: 13px; padding: 8px 0; border-radius: 6px; font-weight: 500; }
+</style>
+{% endblock %}
 
 {% block content %}
 <section class="content-header">
     <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h1>任务大厅 <small class="text-muted">我的任务</small></h1>
-            </div>
+        <div class="mb-4">
+            <h1 class="font-weight-bold text-dark" style="font-size: 24px;">我的标注任务</h1>
+            <p class="text-muted small mb-0">查看分配给您的任务，点击“开始标注”进入工作台。</p>
         </div>
     </div>
 </section>
@@ -16,94 +61,75 @@
     <div class="container-fluid">
         <div class="row">
             {% for task in tasks %}
-            <div class="col-md-4 col-sm-6 col-12">
-                <div class="card {% if task.progress == 100 %}card-success{% else %}card-primary{% endif %} card-outline">
-                    <div class="card-header">
-                        <h3 class="card-title text-truncate" style="max-width: 70%;">
-                            <a href="{% if task.first_sample_id %}{% url 'labeler:annotate' task.first_sample_id %}{% else %}#{% endif %}" class="text-dark">
-                                {{ task.name }}
-                            </a>
-                        </h3>
-                        <div class="card-tools">
-                            <span class="badge badge-light border">#{{ task.code }}</span>
-                            {% if task.progress == 100 %}
-                                <span class="badge badge-success">已完成</span>
-                            {% else %}
-                                <span class="badge badge-primary">进行中</span>
-                            {% endif %}
-                        </div>
-                    </div>
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12 mb-4">
+                <div class="task-card">
+                    <div class="status-bar {% if task.progress == 100 %}status-done{% else %}status-active{% endif %}"></div>
                     
-                    <div class="card-body">
-                        <div class="text-muted text-xs mb-3">
-                            <i class="fas fa-user-md mr-1"></i> {{ task.creator.username }} 
-                            <span class="float-right"><i class="far fa-clock mr-1"></i> {{ task.created_at|date:"Y-m-d" }}</span>
+                    <div class="card-content">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="badge badge-light border text-muted">#{{ task.code|slice:"-6:" }}</span>
+                            {% if task.progress == 100 %}
+                                <span class="badge badge-success-light text-success bg-green-light">已完成</span>
+                            {% else %}
+                                <span class="badge badge-primary-light text-primary bg-blue-light">进行中</span>
+                            {% endif %}
                         </div>
 
-                        <div class="progress progress-xs mb-1">
-                            <div class="progress-bar {% if task.progress == 100 %}bg-success{% else %}bg-primary{% endif %}" role="progressbar" style="width: {{ task.progress }}%;"></div>
-                        </div>
-                        <div class="d-flex justify-content-between mb-3">
-                            <small class="text-muted">进度</small>
-                            <small class="font-weight-bold">{{ task.progress }}%</small>
+                        <h5 class="task-title" title="{{ task.name }}">{{ task.name }}</h5>
+                        <div class="task-info">
+                            <span><i class="far fa-user mr-1"></i>{{ task.creator.username }}</span>
+                            <span>{{ task.created_at|date:"m-d" }}</span>
                         </div>
 
-                        <div class="row text-center border-top pt-3">
-                            <div class="col-4 border-right">
-                                <h5 class="mb-0">{{ task.sample_count }}</h5>
-                                <span class="text-xs text-muted text-uppercase">总样本</span>
+                        <div class="d-flex justify-content-between text-xs mb-1">
+                            <span class="text-muted">完成度</span>
+                            <span class="font-weight-bold text-primary">{{ task.progress }}%</span>
+                        </div>
+                        <div class="progress rounded-pill mb-3" style="height: 6px;">
+                            <div class="progress-bar {% if task.progress == 100 %}bg-success{% else %}bg-primary{% endif %}" 
+                                 style="width: {{ task.progress }}%"></div>
+                        </div>
+
+                        <div class="stats-grid">
+                            <div class="stat-box border-right">
+                                <span class="stat-val text-dark">{{ task.sample_count }}</span>
+                                <span class="stat-key">总量</span>
                             </div>
-                            <div class="col-4 border-right">
-                                <h5 class="mb-0 text-success">{{ task.labeled_count }}</h5>
-                                <span class="text-xs text-muted text-uppercase">已标</span>
+                            <div class="stat-box border-right">
+                                <span class="stat-val text-success">{{ task.labeled_count }}</span>
+                                <span class="stat-key">已标</span>
                             </div>
-                            <div class="col-4">
-                                <h5 class="mb-0 text-danger">{{ task.sample_count|add:"-"|add:task.labeled_count }}</h5>
-                                <span class="text-xs text-muted text-uppercase">剩余</span>
+                            <div class="stat-box">
+                                <span class="stat-val text-danger">{{ task.sample_count|add:"-"|add:task.labeled_count }}</span>
+                                <span class="stat-key">剩余</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="card-footer">
-                        <div class="d-flex justify-content-between">
-                            {% if task.first_sample_id %}
-                                <a href="{% url 'labeler:annotate' task.first_sample_id %}" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-pen-nib"></i> 标注
-                                </a>
-                            {% else %}
-                                <button class="btn btn-secondary btn-sm" disabled>空任务</button>
-                            {% endif %}
-
-                            <button type="button" class="btn btn-warning btn-sm" onclick="openUploadModal('{{ task.id }}', '{{ task.name }}')">
-                                <i class="fas fa-upload"></i> 上传
-                            </button>
-                            
-                            <a href="{% url 'labeler:gallery' task.id %}" class="btn btn-default btn-sm">
-                                <i class="fas fa-images"></i> 图库
+                    <div class="card-actions">
+                        {% if task.first_sample_id %}
+                            <a href="{% url 'labeler:annotate' task.first_sample_id %}" class="btn btn-primary btn-action shadow-sm">
+                                <i class="fas fa-pen-nib mr-1"></i> 开始标注
                             </a>
-                        </div>
-
-                        {% if user.is_superuser %}
-                        <div class="mt-3 pt-2 border-top text-center">
-                            <span class="text-xs text-danger d-block mb-1">管理员操作</span>
-                            <div class="btn-group">
-                                <a href="{% url 'labeler:download' task.id %}" class="btn btn-xs btn-outline-success" target="_blank">
-                                    <i class="fas fa-download"></i> 下载数据
-                                </a>
-                                <a href="{% url 'labeler:delete_task' task.id %}" class="btn btn-xs btn-outline-danger" onclick="return confirm('⚠️ 高危操作\n确定要彻底删除任务 {{ task.name }} 及其所有标注数据吗？\n此操作不可恢复！');">
-                                    <i class="fas fa-trash"></i> 删除
-                                </a>
-                            </div>
-                        </div>
+                        {% else %}
+                            <button class="btn btn-secondary btn-action" disabled>空任务</button>
                         {% endif %}
+
+                        <a href="{% url 'labeler:gallery' task.id %}" class="btn btn-outline-secondary btn-action" title="查看图片库">
+                            <i class="far fa-images"></i>
+                        </a>
+                        <button type="button" class="btn btn-outline-warning btn-action" onclick="openUploadModal('{{ task.id }}', '{{ task.name }}')" title="上传离线结果">
+                            <i class="fas fa-upload"></i>
+                        </button>
                     </div>
                 </div>
             </div>
             {% empty %}
             <div class="col-12">
-                <div class="alert alert-info text-center">
-                    <h5><i class="icon fas fa-info"></i> 暂无任务</h5>
-                    当前没有待领取的标注任务，请联系管理员或稍后再试。
+                <div class="text-center py-5 bg-white rounded shadow-sm border">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4076/4076432.png" alt="Empty" style="width: 100px; opacity: 0.5;" class="mb-3">
+                    <h5 class="text-muted">暂无待办任务</h5>
+                    <p class="text-secondary small">当前没有分配给您的标注任务。</p>
                 </div>
             </div>
             {% endfor %}
@@ -111,11 +137,11 @@
     </div>
 </section>
 
-<div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title">上传标注包</h4>
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title font-weight-bold">上传标注数据包</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -123,20 +149,19 @@
             <form id="uploadForm" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <p>正在为任务：<b id="modalTaskName" class="text-primary"></b> 上传数据</p>
-                    <div class="alert alert-warning text-sm">
-                        <i class="fas fa-exclamation-triangle"></i> 请上传包含 XML/JSON 文件的 ZIP 压缩包。
+                    <p class="text-muted small mb-3">目标任务：<span id="modalTaskName" class="text-primary font-weight-bold"></span></p>
+                    <div class="alert alert-warning border-0 small" style="background: #fffbeb; color: #92400e;">
+                        <i class="fas fa-info-circle mr-1"></i> 请上传包含 XML/JSON 文件的 ZIP 压缩包，文件名需与图片一致。
                     </div>
-                    <div class="form-group">
-                        <div class="custom-file">
-                            <input type="file" class="custom-file-input" name="annotation_file" id="annoFile" required accept=".zip">
-                            <label class="custom-file-label" for="annoFile">选择文件</label>
-                        </div>
+                    
+                    <div class="custom-file mt-2">
+                        <input type="file" class="custom-file-input" name="annotation_file" id="annoFile" required accept=".zip">
+                        <label class="custom-file-label rounded-lg" for="annoFile">点击选择 ZIP 文件...</label>
                     </div>
                 </div>
-                <div class="modal-footer justify-content-between">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
-                    <button type="submit" class="btn btn-primary">确认覆盖并上传</button>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-lg" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary rounded-lg px-4">确认上传</button>
                 </div>
             </form>
         </div>

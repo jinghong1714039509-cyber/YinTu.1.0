@@ -5,19 +5,113 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}医疗数据平台{% endblock %}</title>
 
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
     
     <style>
-        /* 自定义微调 */
-        .content-wrapper { background-color: #f4f6f9; }
-        .nav-sidebar .nav-item > .nav-link.active { background-color: #3498db; color: #fff; }
+        /* === 现代化样式覆盖 (Modern Override) === */
+        :root {
+            --primary-color: #3b82f6;
+            --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            --sidebar-width: 260px;
+            --border-radius-base: 12px;
+            --box-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+
+        /* 侧边栏优化 */
+        .main-sidebar {
+            background: #ffffff !important;
+            box-shadow: var(--box-shadow);
+            border-right: none;
+        }
+        .brand-link {
+            border-bottom: 1px solid #f3f4f6 !important;
+            color: #111827 !important;
+            font-weight: 700;
+            height: 57px; /* 固定高度，防止塌陷 */
+            display: flex;
+            align-items: center;
+        }
+        .nav-sidebar .nav-item {
+            margin-bottom: 4px;
+        }
+        .nav-sidebar .nav-link {
+            border-radius: 8px !important;
+            color: #4b5563 !important;
+            font-weight: 500;
+            padding: 10px 16px;
+            transition: all 0.2s;
+        }
+        .nav-sidebar .nav-link:hover {
+            background-color: #f3f4f6;
+            color: var(--primary-color) !important;
+        }
+        .nav-sidebar .nav-link.active {
+            background: var(--primary-gradient) !important;
+            color: #fff !important;
+            box-shadow: var(--box-shadow-sm) !important;
+        }
+        .nav-sidebar .nav-icon {
+            color: #9ca3af;
+            transition: color 0.2s;
+        }
+        .nav-sidebar .nav-link.active .nav-icon {
+            color: #fff;
+        }
+        .nav-treeview { padding-left: 10px; }
+
+        /* 顶部导航栏 */
+        .main-header {
+            background: rgba(255, 255, 255, 0.9) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: none !important;
+            box-shadow: var(--box-shadow-sm);
+        }
+        .main-header .nav-link { color: #6b7280 !important; }
+
+        /* 卡片与按钮 */
+        .card {
+            border: none !important;
+            border-radius: var(--border-radius-base) !important;
+            box-shadow: var(--box-shadow-sm);
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 1.5rem;
+        }
+        .card:hover { box-shadow: var(--box-shadow); }
+        .card-header {
+            background-color: transparent !important;
+            border-bottom: 1px solid #f3f4f6;
+            padding: 1.25rem 1.5rem;
+        }
+        .btn {
+            border-radius: 8px !important;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            box-shadow: none !important;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+        }
+
         [v-cloak] { display: none; }
     </style>
     {% block css %}{% endblock %}
 </head>
-<body class="hold-transition sidebar-mini layout-fixed">
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
 <div class="wrapper">
 
     <nav class="main-header navbar navbar-expand navbar-white navbar-light">
@@ -27,90 +121,94 @@
             </li>
             <li class="nav-item d-none d-sm-inline-block">
                 <a href="javascript:void(0);" onclick="window.history.back();" class="nav-link">
-                    <i class="fas fa-arrow-left"></i> 返回
+                    <i class="fas fa-arrow-left mr-1"></i> 返回
                 </a>
             </li>
         </ul>
 
         <ul class="navbar-nav ml-auto">
             <li class="nav-item dropdown">
-                <a class="nav-link" data-toggle="dropdown" href="#">
+                <a class="nav-link d-flex align-items-center" data-toggle="dropdown" href="#">
                     <img src="{% if user.avatar %}/media/{{ user.avatar }}{% else %}/static/images/user.png{% endif %}" 
-                         alt="User Avatar" class="img-circle elevation-1" style="width: 30px; height: 30px; margin-right: 5px;">
-                    {% if user.is_authenticated %}
-                        {{ user.username }}
-                    {% else %}
-                        未登录
-                    {% endif %}
+                         alt="Avatar" class="img-circle elevation-1" 
+                         style="width: 32px; height: 32px; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <span class="ml-2 font-weight-bold text-dark d-none d-md-inline">
+                        {% if user.is_authenticated %}{{ user.username }}{% else %}访客{% endif %}
+                    </span>
+                    <i class="fas fa-angle-down ml-1 text-muted small"></i>
                 </a>
-                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                    <a href="#" class="dropdown-item">
-                        <i class="fas fa-question-circle mr-2"></i> 帮助文档
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                    <div class="p-3 text-center bg-light border-bottom">
+                        <strong class="d-block">{{ user.username }}</strong>
+                        <small class="text-muted">{{ user.get_role_display|default:"未分配角色" }}</small>
+                    </div>
+                    <a href="#" class="dropdown-item py-2">
+                        <i class="fas fa-question-circle mr-2 text-primary"></i> 帮助文档
                     </a>
-                    <div class="dropdown-divider"></div>
-                    <a href="{% url 'users:change_password' %}" class="dropdown-item">
-                        <i class="fas fa-key mr-2"></i> 修改密码
+                    <a href="{% url 'users:change_password' %}" class="dropdown-item py-2">
+                        <i class="fas fa-key mr-2 text-warning"></i> 修改密码
                     </a>
-                    <div class="dropdown-divider"></div>
-                    <a href="{% url 'users:logout' %}" class="dropdown-item text-danger">
-                        <i class="fas fa-sign-out-alt mr-2"></i> 切换账号 / 退出
+                    <div class="dropdown-divider m-0"></div>
+                    <a href="{% url 'users:logout' %}" class="dropdown-item py-2 text-danger bg-light">
+                        <i class="fas fa-sign-out-alt mr-2"></i> 退出登录
                     </a>
                 </div>
             </li>
         </ul>
     </nav>
-    <aside class="main-sidebar sidebar-dark-primary elevation-4">
-        <a href="/" class="brand-link">
-            <span class="brand-text font-weight-light px-3"><i class="fas fa-heartbeat"></i> YinTu 医疗</span>
+
+    <aside class="main-sidebar elevation-0">
+        <a href="/" class="brand-link pl-3 d-flex align-items-center">
+            <i class="fas fa-heartbeat text-primary fa-lg mr-2"></i>
+            <span class="brand-text">YinTu <span class="text-primary">Medical</span></span>
         </a>
 
-        <div class="sidebar">
+        <div class="sidebar mt-2">
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                     
                     {% if user.is_superuser %}
-                    <li class="nav-header">超级管理员</li>
-                    <li class="nav-item">
+                    <li class="nav-item mt-3">
                         <a href="{% url 'users:admin_dashboard' %}" class="nav-link">
-                            <i class="nav-icon fas fa-tachometer-alt"></i>
-                            <p>管理面板</p>
+                            <i class="nav-icon fas fa-chart-pie"></i>
+                            <p>数据看板</p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{% url 'users:manage_list' %}" class="nav-link">
-                            <i class="nav-icon fas fa-users"></i>
-                            <p>账号与权限管理</p>
+                            <i class="nav-icon fas fa-users-cog"></i>
+                            <p>用户管理</p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{% url 'users:log_list' %}" class="nav-link">
-                            <i class="nav-icon fas fa-history"></i>
-                            <p>操作日志</p>
+                            <i class="nav-icon fas fa-shield-alt"></i>
+                            <p>安全日志</p>
                         </a>
                     </li>
                     {% endif %}
 
                     {% if user.role == 'hospital' or user.is_superuser %}
-                    <li class="nav-header">医院 / 医生</li>
-                    <li class="nav-item">
-                        <a href="{% url 'hospital:add' %}" class="nav-link">
-                            <i class="nav-icon fas fa-plus-circle"></i>
-                            <p>新建病例任务</p>
-                        </a>
-                    </li>
+                    <li class="nav-header text-uppercase text-xs font-weight-bold text-muted mt-3">医生工作台 / Doctor</li>
                     <li class="nav-item">
                         <a href="{% url 'hospital:index' %}" class="nav-link">
                             <i class="nav-icon fas fa-list-ul"></i>
-                            <p>任务状态列表</p>
+                            <p>任务列表</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'hospital:add' %}" class="nav-link">
+                            <i class="nav-icon fas fa-plus-circle"></i>
+                            <p>新建病例</p>
                         </a>
                     </li>
                     {% endif %}
 
                     {% if user.role == 'labeler' or user.is_superuser %}
-                    <li class="nav-header">标注工作台</li>
+                    <li class="nav-header text-uppercase text-xs font-weight-bold text-muted mt-3">标注中心 / Labeler</li>
                     <li class="nav-item">
                         <a href="{% url 'labeler:dashboard' %}" class="nav-link">
-                            <i class="nav-icon fas fa-folder-open"></i>
+                            <i class="nav-icon fas fa-layer-group"></i>
                             <p>任务大厅</p>
                         </a>
                     </li>
@@ -125,27 +223,28 @@
         {% block content %}{% endblock %}
     </div>
 
-    <footer class="main-footer text-sm">
+    <footer class="main-footer border-top-0 text-sm text-muted">
         <div class="float-right d-none d-sm-block">
-            <b>Version</b> 1.0.0
+            <b>Version</b> 2.0.0 (Pro)
         </div>
-        <strong>Copyright &copy; 2024 <a href="#">YinTu System</a>.</strong> All rights reserved.
+        <strong>Copyright &copy; 2025 <a href="#" class="text-primary">YinTu System</a>.</strong> All rights reserved.
     </footer>
 
 </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 
 <script>
-    // 自动高亮当前菜单逻辑
+    // 自动激活当前菜单
     $(document).ready(function () {
         var url = window.location.href;
-        $('.nav-sidebar a').each(function () {
-            if (this.href === url || url.indexOf(this.href) === 0) {
+        $('.nav-sidebar a.nav-link').each(function () {
+            if (this.href === url || url.indexOf(this.href) > -1) {
                 $(this).addClass('active');
-                $(this).parents('.nav-item').addClass('menu-open');
-                $(this).parents('.nav-treeview').show();
+                $(this).closest('.nav-treeview').show();
+                $(this).closest('.nav-item.has-treeview').addClass('menu-open');
             }
         });
     });

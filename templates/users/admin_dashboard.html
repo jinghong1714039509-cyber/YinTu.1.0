@@ -1,20 +1,75 @@
 {% extends "base_site.html" %}
-{% block title %}系统概览{% endblock %}
+{% block title %}系统概览 | 管理控制台{% endblock %}
 
 {% block css %}
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <style>
         [v-cloak] { display: none !important; }
+        
+        /* 数据卡片样式 */
+        .stat-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            height: 100%;
+            border: 1px solid rgba(243, 244, 246, 0.8);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .stat-icon {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; margin-bottom: 16px;
+        }
+        .stat-value { font-size: 28px; font-weight: 700; color: #111827; line-height: 1.2; }
+        .stat-label { color: #6b7280; font-size: 14px; font-weight: 500; }
+        .stat-meta { font-size: 12px; color: #9ca3af; margin-top: 8px; }
+        
+        /* 颜色主题 */
+        .bg-blue-light { background: #eff6ff; color: #3b82f6; }
+        .bg-red-light { background: #fef2f2; color: #ef4444; }
+        .bg-green-light { background: #f0fdf4; color: #22c55e; }
+        .bg-purple-light { background: #f5f3ff; color: #8b5cf6; }
+
+        /* 图表容器 */
+        .chart-box {
+            background: #fff; border-radius: 16px; padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            height: 100%; min-height: 400px;
+        }
+        .section-title { font-size: 18px; font-weight: 700; color: #1f2937; margin-bottom: 20px; display: flex; align-items: center; }
+        
+        /* 排行榜 */
+        .rank-item { padding: 12px 0; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; }
+        .rank-item:last-child { border-bottom: none; }
+        .rank-badge { 
+            width: 24px; height: 24px; line-height: 24px; text-align: center; 
+            border-radius: 6px; font-size: 12px; font-weight: 700; margin-right: 12px; 
+            background: #f3f4f6; color: #6b7280;
+        }
+        .rank-1 { background: #fef3c7; color: #d97706; } /* 金 */
+        .rank-2 { background: #f1f5f9; color: #64748b; } /* 银 */
+        .rank-3 { background: #ffedd5; color: #c2410c; } /* 铜 */
     </style>
 {% endblock %}
 
 {% block content %}
-<div class="content-header">
+<div class="content-header pb-0">
     <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h1 class="m-0">管理控制台</h1>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="m-0 text-dark font-weight-bold" style="font-size: 24px;">仪表盘</h1>
+                <p class="text-muted small mb-0">欢迎回来，管理员。这是今日的系统概况。</p>
+            </div>
+            <div class="text-right d-none d-sm-block">
+                <span class="badge badge-light p-2 border text-muted">
+                    <i class="far fa-clock mr-1"></i> {{ currentTime }}
+                </span>
             </div>
         </div>
     </div>
@@ -23,129 +78,121 @@
 <div class="content" id="dashboard-app" v-cloak>
     <div class="container-fluid">
         
-        <div class="row">
-            <div class="col-12 col-sm-6 col-md-3">
-                <div class="info-box">
-                    <span class="info-box-icon bg-info elevation-1"><i class="fas fa-microchip"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">服务器 CPU</span>
-                        <span class="info-box-number">
-                            [[ server.cpu ]]
-                            <small>%</small>
-                        </span>
+        <div class="row mb-4">
+            <div class="col-12 col-sm-6 col-md-3 mb-3 mb-md-0">
+                <div class="stat-card">
+                    <div class="stat-icon bg-blue-light"><i class="fas fa-microchip"></i></div>
+                    <div class="stat-value">[[ server.cpu ]]<small class="text-muted" style="font-size: 14px;">%</small></div>
+                    <div class="stat-label">CPU 负载</div>
+                    <div class="progress mt-2" style="height: 4px;">
+                        <div class="progress-bar bg-primary" :style="{width: server.cpu + '%'}"></div>
                     </div>
                 </div>
             </div>
             
-            <div class="col-12 col-sm-6 col-md-3">
-                <div class="info-box mb-3">
-                    <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-memory"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">内存使用</span>
-                        <span class="info-box-number">[[ server.memory ]] <small>%</small></span>
+            <div class="col-12 col-sm-6 col-md-3 mb-3 mb-md-0">
+                <div class="stat-card">
+                    <div class="stat-icon bg-red-light"><i class="fas fa-memory"></i></div>
+                    <div class="stat-value">[[ server.memory ]]<small class="text-muted" style="font-size: 14px;">%</small></div>
+                    <div class="stat-label">内存使用率</div>
+                    <div class="progress mt-2" style="height: 4px;">
+                        <div class="progress-bar bg-danger" :style="{width: server.memory + '%'}"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-12 col-sm-6 col-md-3">
-                <div class="info-box mb-3">
-                    <span class="info-box-icon bg-success elevation-1"><i class="fas fa-hdd"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">磁盘空间</span>
-                        <span class="info-box-number">[[ server.disk ]] <small>%</small></span>
-                        <span class="progress-description text-muted" style="font-size: 10px;">
-                            [[ server.disk_used_gb ]]G / [[ server.disk_total_gb ]]G
-                        </span>
-                    </div>
+            <div class="col-12 col-sm-6 col-md-3 mb-3 mb-md-0">
+                <div class="stat-card">
+                    <div class="stat-icon bg-green-light"><i class="fas fa-hdd"></i></div>
+                    <div class="stat-value">[[ server.disk ]]<small class="text-muted" style="font-size: 14px;">%</small></div>
+                    <div class="stat-label">磁盘空间</div>
+                    <div class="stat-meta">已用 [[ server.disk_used_gb ]]G / 总量 [[ server.disk_total_gb ]]G</div>
                 </div>
             </div>
 
             <div class="col-12 col-sm-6 col-md-3">
-                <div class="info-box mb-3">
-                    <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-users"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">当前在线</span>
-                        <span class="info-box-number">[[ online.total ]]</span>
-                        <span class="progress-description text-muted" style="font-size: 10px;">
-                            医: [[ online.doctors ]] | 标: [[ online.labelers ]]
-                        </span>
+                <div class="stat-card">
+                    <div class="stat-icon bg-purple-light"><i class="fas fa-users"></i></div>
+                    <div class="stat-value">[[ online.total ]]</div>
+                    <div class="stat-label">当前在线用户</div>
+                    <div class="d-flex mt-2 text-xs text-muted">
+                        <span class="mr-2"><i class="fas fa-user-md mr-1"></i>[[ online.doctors ]] 医生</span>
+                        <span><i class="fas fa-pen mr-1"></i>[[ online.labelers ]] 标注员</span>
                     </div>
                 </div>
             </div>
         </div>
+
         <div class="row">
-            <div class="col-lg-8">
-                <div class="card card-primary card-outline">
-                    <div class="card-header border-0">
-                        <div class="d-flex justify-content-between">
-                            <h3 class="card-title"><i class="fas fa-chart-line mr-1"></i> 近7日任务新增趋势</h3>
-                        </div>
+            <div class="col-lg-8 mb-4">
+                <div class="chart-box">
+                    <div class="section-title">
+                        <i class="fas fa-chart-line text-primary mr-2"></i> 任务新增趋势 (近7天)
                     </div>
-                    <div class="card-body">
-                        <div class="position-relative mb-4">
-                            <div id="trendChart" style="height: 300px; width: 100%;"></div>
-                        </div>
-                    </div>
+                    <div id="trendChart" style="height: 320px; width: 100%;"></div>
                 </div>
             </div>
             
-            <div class="col-lg-4">
-                <div class="card card-info card-outline">
-                    <div class="card-header border-0">
-                        <h3 class="card-title"><i class="fas fa-chart-pie mr-1"></i> 任务状态分布</h3>
+            <div class="col-lg-4 mb-4">
+                <div class="chart-box">
+                    <div class="section-title">
+                        <i class="fas fa-chart-pie text-info mr-2"></i> 任务状态分布
                     </div>
-                    <div class="card-body">
-                        <div class="position-relative mb-4">
-                            <div id="pieChart" style="height: 300px; width: 100%;"></div>
-                        </div>
-                    </div>
+                    <div id="pieChart" style="height: 320px; width: 100%;"></div>
                 </div>
             </div>
         </div>
 
         <div class="row">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-header border-0">
-                        <h3 class="card-title"><i class="fas fa-trophy text-warning mr-1"></i> 标注员贡献榜 Top 5</h3>
-                        <div class="card-tools">
-                            <a href="#" class="btn btn-tool btn-sm">
-                                <i class="fas fa-sync-alt"></i> 实时更新
-                            </a>
+                <div class="chart-box" style="min-height: auto;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="section-title mb-0">
+                            <i class="fas fa-trophy text-warning mr-2"></i> 标注员贡献榜 Top 5
                         </div>
+                        <button class="btn btn-sm btn-light text-muted" onclick="location.reload()">
+                            <i class="fas fa-sync-alt"></i> 刷新
+                        </button>
                     </div>
-                    <div class="card-body table-responsive p-0">
-                        <table class="table table-striped table-valign-middle">
-                            <thead>
-                            <tr>
-                                <th>排名</th>
-                                <th>用户</th>
-                                <th>角色</th>
-                                <th class="text-right">标注数量</th>
-                            </tr>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-borderless align-middle mb-0">
+                            <thead class="text-muted small text-uppercase" style="background: #f9fafb;">
+                                <tr>
+                                    <th class="pl-4">排名</th>
+                                    <th>用户</th>
+                                    <th>角色</th>
+                                    <th class="text-right pr-4">标注样本数</th>
+                                </tr>
                             </thead>
                             <tbody>
-                            <tr v-for="(user, index) in topLabelers" :key="index">
-                                <td>
-                                    <span v-if="index === 0" class="badge badge-warning">1</span>
-                                    <span v-else-if="index === 1" class="badge badge-secondary">2</span>
-                                    <span v-else-if="index === 2" class="badge badge-danger">3</span>
-                                    <span v-else class="text-muted ml-2">[[ index + 1 ]]</span>
-                                </td>
-                                <td>
-                                    <img src="/static/images/user.png" alt="User" class="img-circle img-size-32 mr-2">
-                                    [[ user.name ]]
-                                </td>
-                                <td><span class="text-muted">[[ user.role ]]</span></td>
-                                <td class="text-right">
-                                    <span class="text-success text-bold">
-                                        <i class="fas fa-caret-up"></i> [[ user.count ]]
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr v-if="topLabelers.length === 0">
-                                <td colspan="4" class="text-center text-muted py-4">暂无数据</td>
-                            </tr>
+                                <tr v-for="(user, index) in topLabelers" :key="index" class="rank-item-row">
+                                    <td class="pl-4">
+                                        <div :class="['rank-badge', index === 0 ? 'rank-1' : (index === 1 ? 'rank-2' : (index === 2 ? 'rank-3' : ''))]">
+                                            [[ index + 1 ]]
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mr-3" style="width: 32px; height: 32px;">
+                                                <span class="font-weight-bold text-secondary">[[ user.name.charAt(0).toUpperCase() ]]</span>
+                                            </div>
+                                            <span class="font-weight-bold text-dark">[[ user.name ]]</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-light border">[[ user.role ]]</span>
+                                    </td>
+                                    <td class="text-right pr-4">
+                                        <span class="font-weight-bold text-primary" style="font-size: 16px;">[[ user.count ]]</span>
+                                        <small class="text-muted ml-1">张</small>
+                                    </td>
+                                </tr>
+                                <tr v-if="topLabelers.length === 0">
+                                    <td colspan="4" class="text-center text-muted py-5">
+                                        暂无数据
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -164,7 +211,7 @@
         createApp({
             delimiters: ['[[', ']]'],
             setup() {
-                // 数据注入 (保持原有的 Django 模板变量)
+                // 数据注入
                 const server = ref(JSON.parse('{{ server_stats|safe }}'));
                 const online = ref(JSON.parse('{{ online_stats|safe }}'));
                 const pieData = JSON.parse('{{ pie_data|safe }}');
@@ -176,44 +223,65 @@
                 let pieChartInst = null;
 
                 const initCharts = () => {
-                    // 1. 趋势图
+                    // 1. 趋势图美化
                     const trendDom = document.getElementById('trendChart');
                     if (trendDom) {
                         trendChartInst = echarts.init(trendDom);
                         trendChartInst.setOption({
-                            tooltip: { trigger: 'axis' },
+                            tooltip: { 
+                                trigger: 'axis',
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                borderColor: '#e5e7eb',
+                                textStyle: { color: '#1f2937' }
+                            },
                             grid: { top: 30, right: 20, bottom: 20, left: 40, containLabel: true },
-                            xAxis: { type: 'category', data: trendLabels, axisLine: { lineStyle: { color: '#ccc' } } },
-                            yAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed', color: '#eee' } } },
+                            xAxis: { 
+                                type: 'category', 
+                                data: trendLabels, 
+                                axisLine: { show: false },
+                                axisTick: { show: false },
+                                axisLabel: { color: '#9ca3af' }
+                            },
+                            yAxis: { 
+                                type: 'value', 
+                                splitLine: { lineStyle: { type: 'dashed', color: '#f3f4f6' } },
+                                axisLabel: { color: '#9ca3af' }
+                            },
                             series: [{
                                 data: trendValues,
                                 type: 'line',
                                 smooth: true,
-                                itemStyle: { color: '#007bff' },
+                                symbol: 'circle',
+                                symbolSize: 8,
+                                itemStyle: { color: '#3b82f6', borderColor: '#fff', borderWidth: 2 },
+                                lineStyle: { width: 3, shadowColor: 'rgba(59, 130, 246, 0.3)', shadowBlur: 10 },
                                 areaStyle: {
                                     color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                                        { offset: 0, color: 'rgba(0, 123, 255, 0.2)' },
-                                        { offset: 1, color: 'rgba(0, 123, 255, 0)' }
+                                        { offset: 0, color: 'rgba(59, 130, 246, 0.2)' },
+                                        { offset: 1, color: 'rgba(59, 130, 246, 0)' }
                                     ])
                                 }
                             }]
                         });
                     }
 
-                    // 2. 饼图
+                    // 2. 饼图美化
                     const pieDom = document.getElementById('pieChart');
                     if (pieDom) {
                         pieChartInst = echarts.init(pieDom);
                         pieChartInst.setOption({
                             tooltip: { trigger: 'item' },
-                            legend: { bottom: '0', left: 'center' },
+                            color: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                            legend: { bottom: '0', left: 'center', itemWidth: 10, itemHeight: 10, textStyle: { color: '#6b7280' } },
                             series: [{
                                 name: '任务状态',
                                 type: 'pie',
-                                radius: ['40%', '70%'],
+                                radius: ['45%', '70%'],
+                                center: ['50%', '45%'],
                                 avoidLabelOverlap: false,
-                                itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+                                itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 4 },
                                 label: { show: false },
+                                emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold', color: '#374151' } },
                                 data: pieData
                             }]
                         });
@@ -221,10 +289,7 @@
                 };
 
                 onMounted(() => {
-                    setTimeout(() => {
-                        initCharts();
-                    }, 100);
-
+                    setTimeout(initCharts, 100);
                     window.addEventListener('resize', () => {
                         trendChartInst && trendChartInst.resize();
                         pieChartInst && pieChartInst.resize();
