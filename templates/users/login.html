@@ -9,51 +9,70 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
     
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #fff; height: 100vh; overflow: hidden; }
-        
-        .split-screen { display: flex; height: 100%; width: 100%; }
-        
-        /* === 左侧品牌区 === */
-        .left-pane {
-            flex: 55%;
-            /* 这里使用一张更专业的医疗科技背景图 */
-            background: url('https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80') no-repeat center center;
+        /* === 核心背景设置 === */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            height: 100vh; 
+            overflow: hidden; 
+            /* 背景图：使用医疗/科技感的图片 */
+            background: url('https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80') no-repeat center center fixed;
             background-size: cover;
             position: relative;
-            display: none; 
         }
-        /* 蓝色遮罩层 */
-        .left-pane::before {
+
+        /* 叠加一层深蓝色半透明遮罩，让文字更清晰，更有科技感 */
+        body::before {
             content: "";
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(135deg, rgba(30, 58, 138, 0.85) 0%, rgba(59, 130, 246, 0.8) 100%);
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.8) 0%, rgba(17, 24, 39, 0.9) 100%);
+            z-index: 0;
         }
-        .brand-content {
-            position: relative; z-index: 2; height: 100%;
-            display: flex; flex-direction: column; justify-content: center; padding: 0 10%;
-            color: #fff;
+
+        /* === 登录容器 === */
+        .login-container {
+            position: relative; z-index: 1;
+            height: 100%; width: 100%;
+            display: flex; flex-direction: column; 
+            justify-content: center; align-items: center;
+            padding: 20px;
         }
-        .brand-title { font-size: 4rem; font-weight: 800; letter-spacing: -2px; line-height: 1; margin-bottom: 1.5rem; }
-        .brand-subtitle { font-size: 1.5rem; opacity: 0.9; font-weight: 300; border-left: 4px solid #60a5fa; padding-left: 1rem; }
-        
-        /* === 右侧表单区 === */
-        .right-pane {
-            flex: 45%;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: #fff; padding: 2rem; position: relative;
+
+        /* === 登录卡片 === */
+        .login-card {
+            width: 100%; max-width: 420px;
+            background: rgba(255, 255, 255, 0.95); /* 轻微透明的白色背景 */
+            backdrop-filter: blur(10px); /* 毛玻璃特效 (现代浏览器支持) */
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeUp 0.6s ease-out;
         }
-        
-        .login-box { width: 100%; max-width: 400px; }
-        
-        /* 输入框样式 */
+
+        /* 简单的入场动画 */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* === 品牌标题 === */
+        .brand-header { text-align: center; margin-bottom: 30px; }
+        .brand-icon { 
+            font-size: 3rem; color: #3b82f6; margin-bottom: 10px; 
+            text-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        }
+        .brand-title { font-weight: 800; color: #1f2937; letter-spacing: -0.5px; margin-bottom: 5px; }
+        .brand-subtitle { color: #6b7280; font-size: 0.9rem; }
+
+        /* === 输入框样式 === */
         .input-group-modern { position: relative; margin-bottom: 1.5rem; }
         .input-group-modern .icon {
             position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
             color: #9ca3af; font-size: 1.1rem; transition: color 0.3s; pointer-events: none;
         }
         .form-control-modern {
-            width: 100%; height: 54px; padding-left: 50px; padding-right: 15px;
-            border: 2px solid #f3f4f6; background-color: #f9fafb; border-radius: 12px;
+            width: 100%; height: 50px; padding-left: 50px; padding-right: 15px;
+            border: 2px solid #e5e7eb; background-color: #f9fafb; border-radius: 10px;
             font-size: 1rem; outline: none; transition: all 0.3s ease; color: #1f2937;
         }
         .form-control-modern:focus {
@@ -62,79 +81,80 @@
         }
         .form-control-modern:focus + .icon { color: #3b82f6; }
         
+        /* === 按钮样式 === */
         .btn-brand {
-            width: 100%; height: 54px;
+            width: 100%; height: 50px;
             background: linear-gradient(to right, #2563eb, #3b82f6);
-            border: none; border-radius: 12px;
-            color: #fff; font-weight: 600; font-size: 1.1rem;
+            border: none; border-radius: 10px;
+            color: #fff; font-weight: 600; font-size: 1.05rem;
             box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
             transition: all 0.2s;
+            margin-top: 10px;
         }
-        .btn-brand:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4); }
-        
-        @media (max-width: 992px) {
-            .left-pane { display: none; }
-            .right-pane { flex: 100%; }
+        .btn-brand:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4); 
+            background: linear-gradient(to right, #1d4ed8, #2563eb);
+        }
+
+        /* === 底部版权 === */
+        .footer-copyright {
+            position: absolute; bottom: 20px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
         }
     </style>
 </head>
 <body>
 
-<div class="split-screen">
-    <div class="left-pane">
-        <div class="brand-content">
-            <h1 class="brand-title">YinTu<br>Medical</h1>
-            <p class="brand-subtitle">新一代医疗影像数据<br>标注与协作平台</p>
+<div class="login-container">
+    <div class="login-card">
+        
+        <div class="brand-header">
+            <div class="brand-icon"><i class="fas fa-heartbeat"></i></div>
+            <h2 class="brand-title">YinTu Medical</h2>
+            <p class="brand-subtitle">新一代医疗影像协作平台</p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-danger border-0 shadow-sm rounded-lg mb-4 p-2 text-center" style="font-size: 0.9rem;">
+                <i class="fas fa-exclamation-circle mr-1"></i> {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <form action="{% url 'users:login' %}" method="post">
+            {% csrf_token %}
+            
+            <div class="input-group-modern">
+                <input type="text" name="username" class="form-control-modern" placeholder="用户名/账号" required>
+                <i class="fas fa-user icon"></i>
+            </div>
+
+            <div class="input-group-modern">
+                <input type="password" name="password" class="form-control-modern" placeholder="登录密码" required>
+                <i class="fas fa-lock icon"></i>
+            </div>
+            
+            <div class="d-flex justify-content-between mb-4 px-1">
+                 <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="rememberMe">
+                    <label class="custom-control-label text-muted small pt-1" for="rememberMe" style="cursor: pointer;">记住我</label>
+                </div>
+                <a href="#" class="small text-primary font-weight-bold pt-1" style="text-decoration: none;">忘记密码？</a>
+            </div>
+
+            <button type="submit" class="btn btn-brand">立即登录</button>
+        </form>
+
+        <div class="text-center mt-4">
+            <p class="text-muted small mb-0">还没有账号？ <a href="{% url 'users:register' %}" class="text-primary font-weight-bold" style="text-decoration: none;">立即注册</a></p>
         </div>
     </div>
 
-    <div class="right-pane">
-        <div class="login-box">
-            <div class="mb-5">
-                <h2 class="font-weight-bold mb-2">欢迎回来</h2>
-                <p class="text-muted">请登录您的账号以继续工作</p>
-            </div>
-
-            {% if messages %}
-                {% for message in messages %}
-                <div class="alert alert-danger border-0 shadow-sm rounded-lg mb-4">
-                    <i class="fas fa-exclamation-circle mr-1"></i> {{ message }}
-                </div>
-                {% endfor %}
-            {% endif %}
-
-            <form action="{% url 'users:login' %}" method="post">
-                {% csrf_token %}
-                
-                <div class="input-group-modern">
-                    <input type="text" name="username" class="form-control-modern" placeholder="用户名" required>
-                    <i class="fas fa-user icon"></i>
-                </div>
-
-                <div class="input-group-modern">
-                    <input type="password" name="password" class="form-control-modern" placeholder="密码" required>
-                    <i class="fas fa-lock icon"></i>
-                </div>
-                
-                <div class="d-flex justify-content-between mb-4">
-                     <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="rememberMe">
-                        <label class="custom-control-label text-muted small pt-1" for="rememberMe">记住我</label>
-                    </div>
-                    <a href="#" class="small text-primary font-weight-bold pt-1">忘记密码？</a>
-                </div>
-
-                <button type="submit" class="btn btn-brand">立即登录</button>
-            </form>
-
-            <div class="text-center mt-5">
-                <p class="text-muted small">还没有账号？ <a href="{% url 'users:register' %}" class="text-primary font-weight-bold">申请注册</a></p>
-            </div>
-        </div>
-        
-        <div class="position-absolute fixed-bottom text-center pb-3">
-            <small class="text-muted">© 2025 YinTu Medical System v1.0</small>
-        </div>
+    <div class="footer-copyright">
+        © 2025 YinTu Medical System v2.0
     </div>
 </div>
 

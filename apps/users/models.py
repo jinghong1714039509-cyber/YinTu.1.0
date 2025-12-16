@@ -27,7 +27,24 @@ class UserProfile(AbstractUser):
         verbose_name='用户头像',
         null=True, blank=True
     )
-    
+    def get_role_avatar(self):
+        """
+        根据角色获取头像链接：
+        1. 如果用户自己上传了新头像（且不是默认图），使用上传的。
+        2. 否则，根据身份返回对应的卡通图标。
+        """
+        # 判断是否有自定义上传 (排除掉数据库默认的字符串)
+        if self.avatar and str(self.avatar) != 'images/user.png':
+             return self.avatar.url
+        
+        # 根据角色返回静态文件路径
+        base_path = '/static/images/'
+        if self.is_superuser:
+            return base_path + 'avatar_admin.png'   # 管理员图标
+        elif self.role == 'hospital':
+            return base_path + 'avatar_doctor.png'  # 医生图标
+        else:
+            return base_path + 'avatar_labeler.png' # 标注员图标
     class Meta:
         verbose_name = '用户信息'
         verbose_name_plural = verbose_name

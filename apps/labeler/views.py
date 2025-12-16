@@ -1,21 +1,20 @@
 # apps/labeler/views.py
 import json
-import os       # ✅ [修复] 新增 os 模块导入
-import zipfile  # ✅ [优化] 建议提到顶部导入
+import os
+import zipfile
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
 from django.conf import settings
 from django.utils import timezone
-from django.contrib import messages  # ✅ [修复] 新增 messages 模块导入
+from django.contrib import messages
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required, user_passes_test # ✅ [修复] 补充导入 user_passes_test
+from django.contrib.auth.decorators import login_required, user_passes_test
 
 from apps.core.decorators import labeler_required
 from apps.core.models import LabelTask, SampleImage, STATUS_READY
 from apps.core.utils import log_operation
 
-# ... (LABEL_CONFIG 配置保持不变) ...
 LABEL_CONFIG = [
     {'code': '0', 'name_cn': '0 牙齿',   'name_en': '0 Teeth',        'color': '#E74C3C'},
     {'code': '1', 'name_cn': '1 舌头',   'name_en': '1 Tongue',       'color': '#2ECC71'},
@@ -28,16 +27,49 @@ LABEL_CONFIG = [
     {'code': '8', 'name_cn': '8 食道',   'name_en': '8 Esophagus',    'color': '#95A5A6'},
 ]
 
-# ... (dashboard, gallery 函数保持不变) ...
 @never_cache
 @labeler_required
 def dashboard(request):
+    # 只获取状态为 "就绪" (READY) 的任务
     tasks = LabelTask.objects.filter(state=STATUS_READY).order_by('-created_at')
+    
+    # 初始化统计数据
+    stats = {
+        'total': tasks.count(),
+        'not_started': 0,
+        'in_progress': 0,
+        'completed': 0
+    }
+
     for task in tasks:
-        task.progress = int((task.labeled_count / task.sample_count) * 100) if task.sample_count > 0 else 0
+        # 计算进度百分比
+        if task.sample_count > 0:
+            task.progress = int((task.labeled_count / task.sample_count) * 100)
+        else:
+            task.progress = 0
+            
+        # ✅ [优化] 状态分类逻辑
+        if task.labeled_count == 0:
+            # 标注量为0 -> 未开始
+            stats['not_started'] += 1
+            task.status_tag = 'not_started' 
+        elif task.labeled_count < task.sample_count:
+            # 标注量 > 0 但 < 总量 -> 进行中
+            stats['in_progress'] += 1
+            task.status_tag = 'processing'
+        else:
+            # 标注量 >= 总量 -> 已完成
+            stats['completed'] += 1
+            task.status_tag = 'done'
+
+        # 获取第一张图片ID用于跳转
         first_sample = task.samples.first()
         task.first_sample_id = first_sample.id if first_sample else None
-    return render(request, 'labeler/dashboard.html', {'tasks': tasks})
+
+    return render(request, 'labeler/dashboard.html', {
+        'tasks': tasks,
+        'stats': stats # 将统计数据传递给模板
+    })
 
 @never_cache
 @labeler_required
@@ -46,18 +78,15 @@ def gallery(request, task_id):
     samples = task.samples.all()[:100]
     return render(request, 'labeler/gallery.html', {'task': task, 'samples': samples})
 
-# ✅ [核心修改] 支持 AJAX 获取数据，实现无刷新翻页
 @never_cache
 @labeler_required
 def annotate_page(request, sample_id):
     sample = get_object_or_404(SampleImage, id=sample_id)
     task = sample.task
     
-    # 获取前后图片ID
     next_sample = SampleImage.objects.filter(task=task, id__gt=sample.id).order_by('id').first()
     prev_sample = SampleImage.objects.filter(task=task, id__lt=sample.id).order_by('-id').first()
 
-    # 如果是 AJAX 请求，返回 JSON 数据
     if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax'):
         return JsonResponse({
             'status': 'ok',
@@ -71,8 +100,6 @@ def annotate_page(request, sample_id):
             'prev_id': prev_sample.id if prev_sample else None
         })
 
-    # 普通请求，渲染页面
-    # Session 防抖日志
     last_task_id = request.session.get('last_view_task_id')
     if last_task_id != task.id:
         log_operation(request, action="开始标注任务", target=task.name, details=f"进入任务 {task.code}")
@@ -89,7 +116,6 @@ def annotate_page(request, sample_id):
 @require_POST
 @labeler_required
 def save_annotation_data(request, sample_id):
-    """[API] 自动保存接口"""
     try:
         sample = SampleImage.objects.get(id=sample_id)
         data = json.loads(request.body)
@@ -100,7 +126,6 @@ def save_annotation_data(request, sample_id):
         sample.labeled_at = timezone.now()
         sample.save(update_fields=['annotation_content', 'is_labeled', 'labeled_by', 'labeled_at'])
         
-        # 异步更新任务进度
         task = sample.task
         task.labeled_count = task.samples.filter(is_labeled=True).count()
         task.save(update_fields=['labeled_count'])
@@ -109,7 +134,6 @@ def save_annotation_data(request, sample_id):
     except Exception as e:
         return JsonResponse({'status': 'error', 'msg': str(e)}, status=500)
 
-# ... (download_zip, upload_annotation, delete_task 等保持不变) ...
 @never_cache
 @labeler_required
 def download_zip(request, task_id):
@@ -153,13 +177,12 @@ def upload_annotation(request, task_id):
             messages.error(request, f"失败: {e}")
     return redirect('labeler:gallery', task_id=task.id)
 
-# 权限检查函数
 def is_superuser(user): 
     return user.is_superuser
 
 @never_cache
 @login_required
-@user_passes_test(is_superuser)  # ✅ [修复] 这里的装饰器和参数现在都定义好了
+@user_passes_test(is_superuser)
 def delete_task(request, task_id):
     get_object_or_404(LabelTask, id=task_id).delete()
     return redirect('labeler:dashboard')

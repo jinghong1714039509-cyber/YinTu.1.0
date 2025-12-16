@@ -3,27 +3,30 @@
 
 {% block css %}
 <style>
-    /* 任务卡片复用医生端风格，但针对标注员微调 */
+    /* 统计概览卡片样式 */
+    .overview-card {
+        background: #fff; border-radius: 12px; border: 1px solid #f3f4f6;
+        padding: 20px; display: flex; align-items: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .overview-icon {
+        width: 48px; height: 48px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px; margin-right: 16px;
+    }
+    .overview-val { font-size: 24px; font-weight: 700; line-height: 1.2; color: #1f2937; }
+    .overview-label { font-size: 13px; color: #6b7280; }
+
+    /* 任务卡片样式 */
     .task-card {
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        border: 1px solid #f3f4f6;
-        transition: all 0.3s ease;
-        height: 100%;
-        display: flex; flex-direction: column;
+        background: #fff; border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04); border: 1px solid #f3f4f6;
+        transition: all 0.3s ease; height: 100%; display: flex; flex-direction: column;
         overflow: hidden;
     }
-    .task-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.1);
-        border-color: #e5e7eb;
-    }
-
+    .task-card:hover { transform: translateY(-4px); box-shadow: 0 12px 20px -8px rgba(0,0,0,0.1); border-color: #e5e7eb; }
+    
     .status-bar { height: 4px; width: 100%; }
-    .status-active { background: #3b82f6; }
-    .status-done { background: #10b981; }
-
     .card-content { padding: 20px; flex: 1; }
     .task-title {
         font-size: 16px; font-weight: 700; color: #1f2937; margin-bottom: 8px;
@@ -41,9 +44,10 @@
 
     .card-actions {
         padding: 12px 20px; border-top: 1px solid #f3f4f6; background: #fafafa;
-        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;
+        display: flex; gap: 8px; 
     }
-    .btn-action { font-size: 13px; padding: 8px 0; border-radius: 6px; font-weight: 500; }
+    .btn-action { font-size: 13px; padding: 8px 0; border-radius: 6px; font-weight: 500; flex: 1; }
+    .btn-action:first-child { flex: 2; }
 </style>
 {% endblock %}
 
@@ -54,6 +58,33 @@
             <h1 class="font-weight-bold text-dark" style="font-size: 24px;">我的标注任务</h1>
             <p class="text-muted small mb-0">查看分配给您的任务，点击“开始标注”进入工作台。</p>
         </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-3 col-6 mb-3 mb-md-0">
+                <div class="overview-card">
+                    <div class="overview-icon bg-light text-dark"><i class="fas fa-layer-group"></i></div>
+                    <div><div class="overview-val">{{ stats.total }}</div><div class="overview-label">任务总数</div></div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3 mb-md-0">
+                <div class="overview-card">
+                    <div class="overview-icon" style="background: #f3f4f6; color: #6b7280;"><i class="far fa-pause-circle"></i></div>
+                    <div><div class="overview-val">{{ stats.not_started }}</div><div class="overview-label">未开始</div></div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="overview-card">
+                    <div class="overview-icon" style="background: #e0f2fe; color: #0284c7;"><i class="fas fa-spinner"></i></div>
+                    <div><div class="overview-val">{{ stats.in_progress }}</div><div class="overview-label">进行中</div></div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="overview-card">
+                    <div class="overview-icon" style="background: #dcfce7; color: #16a34a;"><i class="fas fa-check"></i></div>
+                    <div><div class="overview-val">{{ stats.completed }}</div><div class="overview-label">已完成</div></div>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -63,13 +94,18 @@
             {% for task in tasks %}
             <div class="col-lg-3 col-md-4 col-sm-6 col-12 mb-4">
                 <div class="task-card">
-                    <div class="status-bar {% if task.progress == 100 %}status-done{% else %}status-active{% endif %}"></div>
+                    <div class="status-bar" 
+                         style="background: {% if task.status_tag == 'done' %}#10b981{% elif task.status_tag == 'processing' %}#3b82f6{% else %}#9ca3af{% endif %};">
+                    </div>
                     
                     <div class="card-content">
                         <div class="d-flex justify-content-between mb-2">
                             <span class="badge badge-light border text-muted">#{{ task.code|slice:"-6:" }}</span>
-                            {% if task.progress == 100 %}
+                            
+                            {% if task.status_tag == 'done' %}
                                 <span class="badge badge-success-light text-success bg-green-light">已完成</span>
+                            {% elif task.status_tag == 'not_started' %}
+                                <span class="badge badge-secondary text-secondary" style="background:#f3f4f6;">未开始</span>
                             {% else %}
                                 <span class="badge badge-primary-light text-primary bg-blue-light">进行中</span>
                             {% endif %}
@@ -85,9 +121,10 @@
                             <span class="text-muted">完成度</span>
                             <span class="font-weight-bold text-primary">{{ task.progress }}%</span>
                         </div>
-                        <div class="progress rounded-pill mb-3" style="height: 6px;">
-                            <div class="progress-bar {% if task.progress == 100 %}bg-success{% else %}bg-primary{% endif %}" 
-                                 style="width: {{ task.progress }}%"></div>
+                        <div class="progress rounded-pill mb-3" style="height: 6px; background-color: #f3f4f6;">
+                            <div class="progress-bar" 
+                                 style="width: {{ task.progress }}%; background-color: {% if task.progress == 0 %}#9ca3af{% elif task.progress == 100 %}#10b981{% else %}#3b82f6{% endif %};">
+                            </div>
                         </div>
 
                         <div class="stats-grid">
@@ -100,7 +137,9 @@
                                 <span class="stat-key">已标</span>
                             </div>
                             <div class="stat-box">
-                                <span class="stat-val text-danger">{{ task.sample_count|add:"-"|add:task.labeled_count }}</span>
+                                <span class="stat-val {% if task.labeled_count == 0 %}text-muted{% else %}text-danger{% endif %}">
+                                    {{ task.sample_count|add:"-"|add:task.labeled_count }}
+                                </span>
                                 <span class="stat-key">剩余</span>
                             </div>
                         </div>
@@ -109,7 +148,11 @@
                     <div class="card-actions">
                         {% if task.first_sample_id %}
                             <a href="{% url 'labeler:annotate' task.first_sample_id %}" class="btn btn-primary btn-action shadow-sm">
-                                <i class="fas fa-pen-nib mr-1"></i> 开始标注
+                                {% if task.labeled_count == 0 %}
+                                    <i class="fas fa-play mr-1"></i> 开始标注
+                                {% else %}
+                                    <i class="fas fa-pen-nib mr-1"></i> 继续标注
+                                {% endif %}
                             </a>
                         {% else %}
                             <button class="btn btn-secondary btn-action" disabled>空任务</button>
@@ -118,9 +161,19 @@
                         <a href="{% url 'labeler:gallery' task.id %}" class="btn btn-outline-secondary btn-action" title="查看图片库">
                             <i class="far fa-images"></i>
                         </a>
+                        
                         <button type="button" class="btn btn-outline-warning btn-action" onclick="openUploadModal('{{ task.id }}', '{{ task.name }}')" title="上传离线结果">
                             <i class="fas fa-upload"></i>
                         </button>
+                        
+                        {% if user.is_superuser %}
+                        <a href="{% url 'labeler:delete_task' task.id %}" 
+                           class="btn btn-outline-danger btn-action" 
+                           onclick="return confirm('⚠️ 高危操作：\n确定要永久删除任务【{{ task.name }}】吗？')" 
+                           title="删除">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>

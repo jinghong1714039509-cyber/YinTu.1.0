@@ -17,7 +17,7 @@ class LabelTask(models.Model):
     """
     # 基础信息
     code = models.CharField(max_length=50, verbose_name='任务编号', unique=True)
-    name = models.CharField(max_length=100, verbose_name='任务/患者名称')
+    name = models.CharField(max_length=100, verbose_name='任务')
     remark = models.TextField(verbose_name='病情备注', null=True, blank=True)
     
     # 归属 (关联到系统用户表)

@@ -123,7 +123,6 @@ def is_superuser(user):
 def user_manage_list(request):
     """
     用户管理列表 (带服务端分页与搜索)
-    ✅ [修改] 增加了账号统计数据的计算
     """
     search_query = request.GET.get('q', '')
     page_number = request.GET.get('page', 1)
@@ -149,11 +148,9 @@ def user_manage_list(request):
     except EmptyPage:
         page_obj = paginator.page(paginator.num_pages)
 
-    # 4. ✅ [新增] 统计数据逻辑
-    # 统计各角色人数，用于前端展示
+    # 4. 统计数据逻辑
     total_users = User.objects.count()
     admin_count = User.objects.filter(is_superuser=True).count()
-    # 假设 role 字段存在 ('hospital' 为医生, 'labeler' 为标注员)
     doctor_count = User.objects.filter(role='hospital').count()
     labeler_count = User.objects.filter(role='labeler').count()
     
@@ -162,7 +159,6 @@ def user_manage_list(request):
         'admins': admin_count,
         'doctors': doctor_count,
         'labelers': labeler_count,
-        # 这里的 'others' 是未分配角色的用户
         'others': total_users - (admin_count + doctor_count + labeler_count)
     }
         
@@ -170,7 +166,7 @@ def user_manage_list(request):
         'page_obj': page_obj,          
         'search_query': search_query, 
         'total_count': users_qs.count(),
-        'stats': stats  # ✅ 将统计数据传递给模板
+        'stats': stats
     }
     return render(request, 'users/manage_list.html', context)
 
@@ -220,7 +216,7 @@ def user_reset_password(request, user_id):
 @user_passes_test(is_superuser)
 def operation_log_list(request):
     """
-    操作日志审计页面 (带服务端分页与搜索)
+    操作日志审计页面
     """
     search_query = request.GET.get('q', '')
     page_number = request.GET.get('page', 1)
@@ -333,7 +329,11 @@ def admin_dashboard(request):
         username = stat['labeled_by']
         user_obj = User.objects.filter(username=username).first()
         role_display = '标注员'
+        
+        # ✅ [修改] 获取正确的头像和角色
+        avatar_url = '/static/images/avatar_labeler.png' # 默认兜底
         if user_obj:
+            avatar_url = user_obj.get_role_avatar()
             if user_obj.is_superuser:
                 role_display = '管理员'
             else:
@@ -343,6 +343,7 @@ def admin_dashboard(request):
             'name': username,
             'role': role_display,
             'count': stat['total_count'],
+            'avatar': avatar_url, # ✅ 将头像URL传给前端
             'accuracy': 100 
         })
 

@@ -34,7 +34,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "name",
-                    models.CharField(max_length=100, verbose_name="任务/患者名称"),
+                    models.CharField(max_length=100, verbose_name="任务"),
                 ),
                 (
                     "remark",

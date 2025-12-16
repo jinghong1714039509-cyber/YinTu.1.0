@@ -14,47 +14,41 @@
            核心架构重构：Flexbox Layout (方案 A)
            ========================================= */
         
-        /* 1. 根容器：Flex 布局，统管全局 */
         .wrapper {
             display: flex !important;
             width: 100% !important;
-            min-height: 100vh; /* 保证占满屏幕 */
+            min-height: 100vh; 
             align-items: stretch !important;
-            overflow-x: hidden; /* 防止子元素溢出撑开 */
+            overflow-x: hidden; 
         }
 
-        /* 2. 左侧 Sidebar：相对定位，参与文档流 */
         .main-sidebar {
-            position: relative !important; /* 关键：取消 fixed */
+            position: relative !important; 
             top: 0 !important;
             left: 0 !important;
             bottom: auto !important;
             right: auto !important;
-            
-            width: 260px !important; /* 固定基准宽度 */
-            min-height: 100vh !important; /* 高度跟随页面 */
-            flex-shrink: 0 !important; /* 禁止被压缩 */
-            
-            margin-left: 0 !important; /* 清除 AdminLTE 的 margin */
-            box-shadow: 2px 0 8px rgba(0,0,0,0.05); /* 独立的右侧阴影 */
+            width: 260px !important; 
+            min-height: 100vh !important; 
+            flex-shrink: 0 !important; 
+            margin-left: 0 !important; 
+            box-shadow: 2px 0 8px rgba(0,0,0,0.05); 
             z-index: 1030;
-            transition: width 0.3s ease-in-out; /* 平滑过渡 */
+            transition: width 0.3s ease-in-out; 
         }
 
-        /* 3. 右侧主面板：占据剩余空间 */
         .main-panel-wrapper {
-            flex: 1 !important; /* 自动填满剩余宽度 */
+            flex: 1 !important; 
             display: flex !important;
-            flex-direction: column !important; /* 垂直排列：Nav -> Content -> Footer */
-            min-width: 0 !important; /* 防止 Flex 子元素溢出 bug */
+            flex-direction: column !important; 
+            min-width: 0 !important; 
             background-color: #f4f6f9;
         }
 
-        /* 4. Navbar, Content, Footer：修正参考系 */
         .main-header {
-            position: sticky !important; /* 推荐：吸顶效果 */
+            position: sticky !important; 
             top: 0;
-            margin-left: 0 !important; /* 关键：清除 margin-left */
+            margin-left: 0 !important; 
             width: 100% !important;
             z-index: 1020;
             border-bottom: 0 !important;
@@ -62,37 +56,31 @@
         }
 
         .content-wrapper {
-            flex: 1; /* 撑开高度，把 Footer 顶到底部 */
-            margin-left: 0 !important; /* 关键：清除 margin-left */
+            flex: 1; 
+            margin-left: 0 !important; 
             background: transparent !important;
             padding-bottom: 20px;
         }
 
         .main-footer {
-            margin-left: 0 !important; /* 关键：清除 margin-left */
+            margin-left: 0 !important; 
             width: 100% !important;
             background: #fff;
             border-top: 1px solid #e5e7eb;
         }
 
-        /* =========================================
-           状态管理：处理折叠 (Collapsed)
-           ========================================= */
-        
-        /* 当 body 有 sidebar-collapse 类时，修改 Sidebar 宽度 */
+        /* 状态管理：处理折叠 */
         body.sidebar-collapse .main-sidebar {
-            width: 73px !important; /* AdminLTE Mini 宽度 */
+            width: 73px !important; 
             min-width: 73px !important;
         }
         
-        /* 折叠时隐藏 Logo 文字和用户信息 */
         body.sidebar-collapse .brand-link .brand-text,
         body.sidebar-collapse .user-panel .info {
             display: none !important;
             opacity: 0;
         }
         
-        /* 鼠标悬停 Sidebar 时自动展开 (可选，提升体验) */
         body.sidebar-collapse .main-sidebar:hover {
             width: 260px !important;
         }
@@ -103,9 +91,7 @@
             transition: opacity 0.2s 0.1s;
         }
 
-        /* =========================================
-           视觉优化 (Visual Polish)
-           ========================================= */
+        /* 视觉优化 */
         :root {
             --primary-color: #3b82f6;
             --sidebar-active-bg: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
@@ -117,11 +103,10 @@
         .brand-link {
             border-bottom: 1px solid #f3f4f6 !important;
             color: #111827 !important;
-            height: 57px; /* 与 Navbar 高度对其，确保 Y 轴对齐 */
+            height: 57px; 
             display: flex; align-items: center; justify-content: center;
         }
         
-        /* 菜单样式微调 */
         .nav-sidebar .nav-link {
             border-radius: 8px !important;
             color: #4b5563 !important;
@@ -178,23 +163,23 @@
                     <li class="nav-item">
                         <a href="{% url 'hospital:index' %}" class="nav-link">
                             <i class="nav-icon fas fa-list-ul"></i>
-                            <p>任务列表</p>
+                            <p>审核中心</p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{% url 'hospital:add' %}" class="nav-link">
                             <i class="nav-icon fas fa-plus-circle"></i>
-                            <p>新建病例</p>
+                            <p>上传标注</p>
                         </a>
                     </li>
                     {% endif %}
 
                     {% if user.role == 'labeler' or user.is_superuser %}
-                    <li class="nav-header text-uppercase text-xs font-weight-bold text-muted mt-3">标注中心</li>
+                    <li class="nav-header text-uppercase text-xs font-weight-bold text-muted mt-3">标注员工作台</li>
                     <li class="nav-item">
                         <a href="{% url 'labeler:dashboard' %}" class="nav-link">
                             <i class="nav-icon fas fa-layer-group"></i>
-                            <p>任务大厅</p>
+                            <p>标注中心</p>
                         </a>
                     </li>
                     {% endif %}
@@ -221,7 +206,7 @@
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item dropdown">
                     <a class="nav-link d-flex align-items-center" data-toggle="dropdown" href="#">
-                        <img src="{% if user.avatar %}/media/{{ user.avatar }}{% else %}/static/images/user.png{% endif %}" 
+                        <img src="{{ user.get_role_avatar }}" 
                              alt="Avatar" class="img-circle elevation-1" 
                              style="width: 32px; height: 32px; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                         <span class="ml-2 font-weight-bold text-dark d-none d-md-inline">
