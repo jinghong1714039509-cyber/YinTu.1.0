@@ -163,23 +163,23 @@
                     <li class="nav-item">
                         <a href="{% url 'hospital:index' %}" class="nav-link">
                             <i class="nav-icon fas fa-list-ul"></i>
-                            <p>审核中心</p>
+                            <p>任务列表</p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{% url 'hospital:add' %}" class="nav-link">
                             <i class="nav-icon fas fa-plus-circle"></i>
-                            <p>上传标注</p>
+                            <p>新建病例</p>
                         </a>
                     </li>
                     {% endif %}
 
                     {% if user.role == 'labeler' or user.is_superuser %}
-                    <li class="nav-header text-uppercase text-xs font-weight-bold text-muted mt-3">标注员工作台</li>
+                    <li class="nav-header text-uppercase text-xs font-weight-bold text-muted mt-3">标注中心</li>
                     <li class="nav-item">
                         <a href="{% url 'labeler:dashboard' %}" class="nav-link">
                             <i class="nav-icon fas fa-layer-group"></i>
-                            <p>标注中心</p>
+                            <p>任务大厅</p>
                         </a>
                     </li>
                     {% endif %}

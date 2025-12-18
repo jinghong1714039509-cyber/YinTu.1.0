@@ -1,17 +1,21 @@
 import os
 import cv2
+import json
 import threading
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.contrib import messages
 from django.db import connection
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger  # ✅ 引入分页器
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 # 引入装饰器
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 from apps.core.decorators import hospital_required 
 
+# 引入核心模型
 from apps.core.models import LabelTask, SampleImage, STATUS_READY, STATUS_ERROR
 from apps.core.utils import gen_random_code, encrypt_file, log_operation
 
@@ -155,7 +159,7 @@ def process_video_logic(task, video_abs_path, output_dir, extract_fps=1):
 @hospital_required
 def index(request):
     """
-    A端任务列表 - ✅ [已升级] 支持分页和进度计算
+    A端任务列表
     """
     # 1. 获取所有任务（倒序）
     task_list = LabelTask.objects.all().order_by('-id')
@@ -179,3 +183,96 @@ def index(request):
         tasks = paginator.page(paginator.num_pages)
 
     return render(request, 'hospital/task_list.html', {'tasks': tasks})
+
+# ==========================================
+#  ✅ 新增：审核功能相关视图
+# ==========================================
+
+@never_cache
+@hospital_required
+def audit_workspace(request, task_id):
+    """
+    [新增] 医生审核工作台 (与标注界面类似，但侧重于审核操作)
+    """
+    task = get_object_or_404(LabelTask, id=task_id)
+
+    # === AJAX 请求处理：获取图片数据 ===
+    if request.GET.get('ajax'):
+        sample_id = request.GET.get('sample_id')
+        
+        # 查找逻辑：
+        # 1. 如果指定了 sample_id，就查那张
+        # 2. 如果没指定，优先查第一张【未审核】且【已标注】的图片
+        # 3. 如果都审核完了，就查第一张图片
+        if sample_id:
+            sample = SampleImage.objects.filter(id=sample_id, task=task).first()
+        else:
+            sample = SampleImage.objects.filter(task=task, is_labeled=True, audit_status=0).first()
+            if not sample:
+                sample = SampleImage.objects.filter(task=task).first()
+        
+        if not sample:
+            return JsonResponse({'status': 'empty', 'msg': '暂无样本'})
+
+        # 获取上一张/下一张 ID (方便切换)
+        prev_obj = SampleImage.objects.filter(task=task, id__lt=sample.id).order_by('-id').first()
+        next_obj = SampleImage.objects.filter(task=task, id__gt=sample.id).order_by('id').first()
+
+        # 解析标注数据
+        annotations = []
+        if sample.annotation_content:
+            try:
+                annotations = json.loads(sample.annotation_content)
+            except:
+                annotations = []
+
+        return JsonResponse({
+            'status': 'ok',
+            'sample': {
+                'id': sample.id,
+                'url': f"/media/{sample.file_path}",
+                'name': sample.original_name,
+                'is_labeled': sample.is_labeled,
+                'annotations': annotations,
+                # 审核相关
+                'audit_status': sample.audit_status,
+                'audit_reason': sample.audit_reason or ''
+            },
+            'prev_id': prev_obj.id if prev_obj else None,
+            'next_id': next_obj.id if next_obj else None
+        })
+
+    # === 普通页面加载 ===
+    # 模拟一个标签配置 (实际应从数据库读取，这里暂时硬编码)
+    label_config = [
+        {'code': 'nodule', 'name_cn': '肺结节', 'color': '#e74c3c'},
+        {'code': 'fracture', 'name_cn': '骨折', 'color': '#f1c40f'},
+        {'code': 'mass', 'name_cn': '肿块', 'color': '#9b59b6'},
+    ]
+    return render(request, 'hospital/audit.html', {
+        'task': task, 
+        'label_config': label_config
+    })
+
+@csrf_exempt
+@hospital_required
+def save_audit_result(request):
+    """
+    [新增] 保存审核结果 API
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            sample_id = data.get('sample_id')
+            status = int(data.get('status')) # 1:通过, 2:驳回
+            reason = data.get('reason', '')
+
+            sample = get_object_or_404(SampleImage, id=sample_id)
+            sample.audit_status = status
+            sample.audit_reason = reason
+            sample.save()
+            
+            return JsonResponse({'status': 'ok'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'msg': str(e)})
+    return JsonResponse({'status': 'error', 'msg': 'Method not allowed'})

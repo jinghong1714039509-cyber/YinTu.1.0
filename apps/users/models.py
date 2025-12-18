@@ -19,14 +19,15 @@ class UserProfile(AbstractUser):
     department = models.CharField(max_length=50, verbose_name='所属科室', null=True, blank=True)
     notes = models.TextField(verbose_name='备注信息', null=True, blank=True)
     
-    # ✅ [新增] 用户头像字段 (用于后续个人中心)
-    # default 指向的是 static/images/user.png，请确保该文件存在
+    # 用户头像字段
     avatar = models.ImageField(
         upload_to='avatars/%Y/%m/', 
         default='images/user.png', 
         verbose_name='用户头像',
         null=True, blank=True
     )
+
+    # ✅ [新增] 动态获取角色头像的方法
     def get_role_avatar(self):
         """
         根据角色获取头像链接：
@@ -45,6 +46,7 @@ class UserProfile(AbstractUser):
             return base_path + 'avatar_doctor.png'  # 医生图标
         else:
             return base_path + 'avatar_labeler.png' # 标注员图标
+    
     class Meta:
         verbose_name = '用户信息'
         verbose_name_plural = verbose_name
@@ -52,11 +54,11 @@ class UserProfile(AbstractUser):
 
 class OperationLog(models.Model):
     """
-    ✅ [新增] 系统操作日志
+    系统操作日志
     """
     operator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='操作人')
-    action = models.CharField(max_length=50, verbose_name='动作类型')  # 如：删除用户、重置密码
-    target = models.CharField(max_length=100, verbose_name='操作对象', null=True, blank=True) # 如：被操作的用户名
+    action = models.CharField(max_length=50, verbose_name='动作类型')
+    target = models.CharField(max_length=100, verbose_name='操作对象', null=True, blank=True)
     ip_address = models.GenericIPAddressField(verbose_name='IP地址', null=True, blank=True)
     details = models.TextField(verbose_name='详细信息', null=True, blank=True)
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='操作时间')

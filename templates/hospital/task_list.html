@@ -25,10 +25,9 @@
 
     /* 状态颜色条 */
     .status-bar { height: 4px; width: 100%; }
-    .status-processing { background: #3b82f6; } /* 处理中/进行中 */
-    .status-done { background: #10b981; }       /* 完成 */
-    .status-error { background: #ef4444; }      /* 错误 */
-    .status-unstarted { background: #9ca3af; }  /* 未开始 */
+    .status-processing { background: #3b82f6; }
+    .status-done { background: #10b981; }
+    .status-error { background: #ef4444; }
 
     /* 卡片内容 */
     .card-content { padding: 20px; flex: 1; }
@@ -89,25 +88,15 @@
                 {% for task in tasks %}
                 <div class="col-lg-3 col-md-4 col-sm-6 col-12 mb-4">
                     <div class="task-card">
-                        <div class="status-bar 
-                            {% if task.state == 2 %}status-done
-                            {% elif task.state == 9 %}status-error
-                            {% elif task.state == 1 and task.labeled_count == 0 %}status-unstarted
-                            {% else %}status-processing{% endif %}">
-                        </div>
+                        <div class="status-bar {% if task.state == 2 %}status-done{% elif task.state == 9 %}status-error{% else %}status-processing{% endif %}"></div>
                         
                         <div class="card-content">
                             <div class="d-flex justify-content-between align-items-start">
                                 <span class="badge badge-light border text-muted mb-2">#{{ task.code|slice:"-6:" }}</span>
-                                
                                 {% if task.state == 0 %}
                                     <span class="badge badge-primary-light text-primary bg-blue-light"><i class="fas fa-spinner fa-spin mr-1"></i>处理中</span>
                                 {% elif task.state == 1 %}
-                                    {% if task.labeled_count == 0 %}
-                                        <span class="badge badge-secondary text-secondary" style="background-color: #f3f4f6;">未开始</span>
-                                    {% else %}
-                                        <span class="badge badge-info-light text-info bg-cyan-light">进行中</span>
-                                    {% endif %}
+                                    <span class="badge badge-info-light text-info bg-blue-light">进行中</span>
                                 {% elif task.state == 2 %}
                                     <span class="badge badge-success-light text-success bg-green-light"><i class="fas fa-check mr-1"></i>已完成</span>
                                 {% elif task.state == 9 %}
@@ -121,8 +110,8 @@
                                 <span>{{ task.progress }}%</span>
                             </div>
                             
-                            <div class="progress rounded-pill mb-3" style="height: 6px; background-color: #f3f4f6;">
-                                <div class="progress-bar {% if task.state == 2 %}bg-success{% elif task.state == 9 %}bg-danger{% elif task.state == 1 and task.labeled_count == 0 %}bg-secondary{% else %}bg-primary{% endif %}" 
+                            <div class="progress rounded-pill mb-3" style="height: 6px;">
+                                <div class="progress-bar {% if task.state == 2 %}bg-success{% elif task.state == 9 %}bg-danger{% else %}bg-primary{% endif %}" 
                                      role="progressbar" style="width: {{ task.progress }}%"></div>
                             </div>
 
@@ -148,7 +137,11 @@
                         
                         <div class="card-actions">
                             {% if task.state >= 1 %}
-                                <a href="{% url 'labeler:gallery' task.id %}" class="btn btn-outline-primary action-btn">
+                                <a href="{% url 'hospital:audit' task.id %}" class="btn btn-primary action-btn">
+                                    <i class="fas fa-check-double mr-1"></i> 审核
+                                </a>
+
+                                <a href="{% url 'labeler:gallery' task.id %}" class="btn btn-light border text-muted action-btn">
                                     <i class="far fa-eye mr-1"></i> 预览
                                 </a>
                             {% else %}
@@ -156,14 +149,12 @@
                             {% endif %}
 
                             {% if task.patient_file_path %}
-                                <a href="/media/{{ task.patient_file_path }}" download class="btn btn-outline-success action-btn">
-                                    <i class="fas fa-download mr-1"></i> 病例
+                                <a href="/media/{{ task.patient_file_path }}" download class="btn btn-outline-success action-btn" title="下载加密病例">
+                                    <i class="fas fa-file-medical"></i>
                                 </a>
-                            {% else %}
-                                <button class="btn btn-light text-muted action-btn" disabled>无文件</button>
                             {% endif %}
                         </div>
-                    </div>
+                        </div>
                 </div>
                 {% endfor %}
             {% else %}

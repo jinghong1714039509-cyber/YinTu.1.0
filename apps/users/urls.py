@@ -13,4 +13,5 @@ urlpatterns = [
     path('manage/reset/<int:user_id>/', views.user_reset_password, name='user_reset'),
     path('logs/', views.operation_log_list, name='log_list'),
     path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
+   
 ]
