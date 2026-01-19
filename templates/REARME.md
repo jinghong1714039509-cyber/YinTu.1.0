@@ -136,3 +136,5 @@ YinTu.1.0/
 │   ├── hospital/
 │   └── labeler/
 └── static/
+#Yintu 1.1
+加入了医生端审计 头像功能
